@@ -13,6 +13,14 @@
   <div class="logo">Endercover</div>
   <div class="tagline">Trouve l'espion avant qu'il ne t'échappe</div>
   <input id="home-name" class="input" placeholder="Ton pseudo" maxlength="16"/>
+  <div class="rounds-select">
+    <label>Nombre de manches</label>
+    <select id="home-rounds" class="input" style="width:auto;">
+      <option value="1">1 manche</option>
+      <option value="3" selected>3 manches</option>
+      <option value="5">5 manches</option>
+    </select>
+  </div>
   <button class="btn-primary" onclick="createRoom()">Créer une salle</button>
   <div class="divider">ou</div>
   <input id="home-code" class="input" placeholder="Code de la salle (ex: ABCD)" maxlength="4" style="text-transform:uppercase"/>
@@ -28,7 +36,6 @@
     </div>
     <button class="btn-quit" onclick="quitGame()">✕ Quitter</button>
   </div>
-
   <div class="share-box card">
     <div class="card-label">Inviter des amis</div>
     <div class="share-row">
@@ -38,9 +45,7 @@
     <div id="qrcode-wrap" style="margin-top:12px;display:flex;justify-content:center;">
       <div id="qrcode"></div>
     </div>
-    <div class="note" style="text-align:center;margin-top:8px;">Scanne le QR code ou partage le lien</div>
   </div>
-
   <div class="section-label" style="margin-top:1rem;">Joueurs connectés</div>
   <div id="lobby-players" class="player-list"></div>
   <div id="lobby-hint" class="note"></div>
@@ -88,6 +93,14 @@
     <div class="card-label">Indices donnés</div>
     <div id="hints-list"></div>
   </div>
+  <div class="card chat-box">
+    <div class="card-label">Chat</div>
+    <div id="chat-messages" class="chat-messages"></div>
+    <div class="chat-input-row">
+      <input id="chat-input" class="input" placeholder="Message..." maxlength="100"/>
+      <button class="btn-send" onclick="sendChat()">➤</button>
+    </div>
+  </div>
 </div>
 
 <div id="screen-vote" class="screen">
@@ -103,35 +116,35 @@
 
 <div id="screen-result" class="screen">
   <div class="top-bar">
-    <div></div>
+    <div id="result-round-info" class="section-label"></div>
     <button class="btn-quit" onclick="quitGame()">✕ Quitter</button>
   </div>
   <div id="result-icon" class="result-icon"></div>
   <div id="result-title" class="result-title"></div>
   <div id="result-sub" class="result-sub"></div>
-  <div class="card" style="margin-top:1.5rem;">
+  <div class="card" style="margin-top:1rem;">
     <div class="card-label">Révélation</div>
     <div class="reveal-row">
       <div id="res-ally-img" class="char-img-wrap-sm"></div>
-      <div>
-        <div id="res-ally-name" class="char-name-sm"></div>
-        <div class="char-uni">Personnage des alliés</div>
-      </div>
+      <div><div id="res-ally-name" class="char-name-sm"></div><div class="char-uni">Personnage des alliés</div></div>
     </div>
     <div class="reveal-row">
       <div id="res-spy-img" class="char-img-wrap-sm"></div>
-      <div>
-        <div id="res-spy-name" class="char-name-sm"></div>
-        <div class="char-uni">Personnage de l'espion · <span id="res-spy-player"></span></div>
-      </div>
+      <div><div id="res-spy-name" class="char-name-sm"></div><div class="char-uni">Espion · <span id="res-spy-player"></span></div></div>
     </div>
+  </div>
+  <div class="card" style="margin-top:1rem;">
+    <div class="card-label">Scores</div>
+    <div id="scores-list"></div>
   </div>
   <div class="card" style="margin-top:1rem;">
     <div class="card-label">Votes</div>
     <div id="votes-list"></div>
   </div>
+  <div id="result-final-title" class="result-final" style="display:none;">🏆 Fin de la partie !</div>
+  <button id="result-next-btn" class="btn-primary" style="display:none;" onclick="nextRound()">Manche suivante →</button>
   <button id="result-restart-btn" class="btn-primary" style="display:none;" onclick="restart()">Rejouer</button>
-  <div id="result-wait" class="note" style="text-align:center;">En attente de l'hôte pour rejouer...</div>
+  <div id="result-wait" class="note" style="text-align:center;display:none;">En attente de l'hôte...</div>
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
