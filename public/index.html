@@ -9,23 +9,33 @@
 </head>
 <body>
 
+<!-- Particules d'arrière-plan -->
+<div id="particles"></div>
+
 <div id="screen-home" class="screen active">
-  <div class="logo">Endercover</div>
-  <div class="tagline">Trouve l'espion avant qu'il ne t'échappe</div>
-  <input id="home-name" class="input" placeholder="Ton pseudo" maxlength="16"/>
-  <div class="rounds-select">
-    <label>Nombre de manches</label>
-    <select id="home-rounds" class="input" style="width:auto;">
-      <option value="1">1 manche</option>
-      <option value="3" selected>3 manches</option>
-      <option value="5">5 manches</option>
-    </select>
+  <div class="home-hero">
+    <div class="home-logo-wrap">
+      <div class="logo-glow">Endercover</div>
+      <div class="logo-sub">Trouve l'espion avant qu'il ne t'échappe</div>
+    </div>
+    <div class="floating-chars" id="floating-chars"></div>
   </div>
-  <button class="btn-primary" onclick="createRoom()">Créer une salle</button>
-  <div class="divider">ou</div>
-  <input id="home-code" class="input" placeholder="Code de la salle (ex: ABCD)" maxlength="4" style="text-transform:uppercase"/>
-  <button class="btn-secondary" onclick="joinRoom()">Rejoindre</button>
-  <div id="home-error" class="error-msg"></div>
+  <div class="home-form">
+    <input id="home-name" class="input" placeholder="Ton pseudo" maxlength="16"/>
+    <div class="rounds-select">
+      <label>Manches</label>
+      <select id="home-rounds" class="input select-sm">
+        <option value="1">1</option>
+        <option value="3" selected>3</option>
+        <option value="5">5</option>
+      </select>
+    </div>
+    <button class="btn-primary btn-glow" onclick="createRoom()">Créer une salle</button>
+    <div class="divider">ou</div>
+    <input id="home-code" class="input" placeholder="Code de la salle (ex: ABCD)" maxlength="4" style="text-transform:uppercase"/>
+    <button class="btn-secondary" onclick="joinRoom()">Rejoindre</button>
+    <div id="home-error" class="error-msg"></div>
+  </div>
 </div>
 
 <div id="screen-lobby" class="screen">
@@ -34,7 +44,7 @@
       <div class="section-label">Code de la salle</div>
       <div id="lobby-code" class="room-code"></div>
     </div>
-    <button class="btn-quit" onclick="quitGame()">✕ Quitter</button>
+    <button class="btn-quit" onclick="quitGame()">✕</button>
   </div>
   <div class="share-box card">
     <div class="card-label">Inviter des amis</div>
@@ -42,24 +52,26 @@
       <div id="share-link" class="share-link-text"></div>
       <button class="btn-copy" id="copy-btn" onclick="copyLink()">📋 Copier</button>
     </div>
-    <div id="qrcode-wrap" style="margin-top:12px;display:flex;justify-content:center;">
-      <div id="qrcode"></div>
-    </div>
+    <div style="margin-top:12px;display:flex;justify-content:center;"><div id="qrcode"></div></div>
   </div>
-  <div class="section-label" style="margin-top:1rem;">Joueurs connectés</div>
+  <div id="universe-panel" class="card" style="display:none;">
+    <div class="card-label">Univers actifs <span id="uni-count" style="color:var(--purple-light)"></span></div>
+    <div id="universe-list" class="universe-grid"></div>
+  </div>
+  <div class="section-label" style="margin-top:1rem;">Joueurs</div>
   <div id="lobby-players" class="player-list"></div>
   <div id="lobby-hint" class="note"></div>
   <button onclick="toggleVoice()" id="voice-btn" class="btn-voice">🎤 Vocal OFF</button>
-  <button id="lobby-start-btn" class="btn-primary" onclick="startGame()" style="display:none;">Lancer la partie</button>
+  <button id="lobby-start-btn" class="btn-primary btn-glow" onclick="startGame()" style="display:none;">Lancer la partie</button>
   <div id="lobby-error" class="error-msg"></div>
 </div>
 
 <div id="screen-reveal" class="screen">
   <div class="top-bar">
     <div class="section-label" id="reveal-waiting"></div>
-    <button class="btn-quit" onclick="quitGame()">✕ Quitter</button>
+    <button class="btn-quit" onclick="quitGame()">✕</button>
   </div>
-  <div class="char-card">
+  <div class="char-card reveal-anim">
     <div id="reveal-char-img" class="char-img-wrap"></div>
     <div id="reveal-name" class="char-name"></div>
     <div id="reveal-uni" class="char-uni"></div>
@@ -73,7 +85,7 @@
 <div id="screen-round" class="screen">
   <div class="top-bar">
     <div id="round-label" class="section-label"></div>
-    <button class="btn-quit" onclick="quitGame()">✕ Quitter</button>
+    <button class="btn-quit" onclick="quitGame()">✕</button>
   </div>
   <div class="progress-bar"><div id="round-progress" class="progress-fill"></div></div>
   <div id="timer-bar" class="timer-bar" style="display:none;">
@@ -106,7 +118,7 @@
 <div id="screen-vote" class="screen">
   <div class="top-bar">
     <div class="section-label">Qui est l'espion ?</div>
-    <button class="btn-quit" onclick="quitGame()">✕ Quitter</button>
+    <button class="btn-quit" onclick="quitGame()">✕</button>
   </div>
   <div id="vote-hints" class="card"></div>
   <div id="vote-buttons"></div>
@@ -117,7 +129,7 @@
 <div id="screen-result" class="screen">
   <div class="top-bar">
     <div id="result-round-info" class="section-label"></div>
-    <button class="btn-quit" onclick="quitGame()">✕ Quitter</button>
+    <button class="btn-quit" onclick="quitGame()">✕</button>
   </div>
   <div id="result-icon" class="result-icon"></div>
   <div id="result-title" class="result-title"></div>
@@ -126,7 +138,7 @@
     <div class="card-label">Révélation</div>
     <div class="reveal-row">
       <div id="res-ally-img" class="char-img-wrap-sm"></div>
-      <div><div id="res-ally-name" class="char-name-sm"></div><div class="char-uni">Personnage des alliés</div></div>
+      <div><div id="res-ally-name" class="char-name-sm"></div><div class="char-uni">Alliés</div></div>
     </div>
     <div class="reveal-row">
       <div id="res-spy-img" class="char-img-wrap-sm"></div>
@@ -142,7 +154,7 @@
     <div id="votes-list"></div>
   </div>
   <div id="result-final-title" class="result-final" style="display:none;">🏆 Fin de la partie !</div>
-  <button id="result-next-btn" class="btn-primary" style="display:none;" onclick="nextRound()">Manche suivante →</button>
+  <button id="result-next-btn" class="btn-primary btn-glow" style="display:none;" onclick="nextRound()">Manche suivante →</button>
   <button id="result-restart-btn" class="btn-primary" style="display:none;" onclick="restart()">Rejouer</button>
   <div id="result-wait" class="note" style="text-align:center;display:none;">En attente de l'hôte...</div>
 </div>
