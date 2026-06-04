@@ -295,6 +295,8 @@ let score = 0;
 let streak = 0;
 let lives = 3;
 let round = 0;
+let shuffledPool = [];
+let poolIndex = 0;
 let totalRounds = 10;
 let roundResults = [];
 let selectedGuess = null;
@@ -338,7 +340,7 @@ function startGame(){
   maxHints=d.maxHints;
   totalRounds=d.rounds;
   lives=d.lives;
-  score=0;streak=0;round=0;roundResults=[];
+  score=0;streak=0;round=0;roundResults=[];const p=getAvailableChars();shuffledPool=p.sort(()=>Math.random()-0.5);poolIndex=0;
   nextRound();
   show('game');
 }
@@ -347,8 +349,8 @@ function nextRound(){
   round++;
   selectedGuess=null;
   hintsRevealed=0;
-  const pool=getAvailableChars();
-  currentChar=pool[Math.floor(Math.random()*pool.length)];
+  if(poolIndex>=shuffledPool.length){shuffledPool=[...shuffledPool].sort(()=>Math.random()-0.5);poolIndex=0;}
+  currentChar=shuffledPool[poolIndex++];
   document.getElementById('game-round-label').textContent=`Personnage ${round}/${totalRounds}`;
   document.getElementById('game-score').textContent=score;
   document.getElementById('game-lives').textContent='❤️'.repeat(lives)+'🖤'.repeat(Math.max(0,3-lives));
