@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Endercover</title>
+  <link rel="stylesheet" href="style.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+
+<!-- Particules d'arrière-plan -->
+<div id="particles"></div>
+
+<div id="screen-home" class="screen active">
+  <div class="home-hero">
+    <div class="home-logo-wrap">
+      <div class="logo-glow">Endercover</div>
+      <div class="logo-sub">Trouve l'espion avant qu'il ne t'échappe</div>
+    </div>
+    <div class="floating-chars" id="floating-chars"></div>
+  </div>
+  <div class="home-form">
+    <input id="home-name" class="input" placeholder="Ton pseudo" maxlength="16"/>
+    <div class="rounds-select">
+      <label>Manches</label>
+      <select id="home-rounds" class="input select-sm">
+        <option value="1">1</option>
+        <option value="3" selected>3</option>
+        <option value="5">5</option>
+      </select>
+    </div>
+    <button class="btn-primary btn-glow" onclick="createRoom()">Créer une salle</button>
+    <div class="divider">ou</div>
+    <input id="home-code" class="input" placeholder="Code de la salle (ex: ABCD)" maxlength="4" style="text-transform:uppercase"/>
+    <button class="btn-secondary" onclick="joinRoom()">Rejoindre</button>
+    <div id="home-error" class="error-msg"></div>
+  </div>
+</div>
+
+<div id="screen-lobby" class="screen">
+  <div class="top-bar">
+    <div>
+      <div class="section-label">Code de la salle</div>
+      <div id="lobby-code" class="room-code"></div>
+    </div>
+    <button class="btn-quit" onclick="quitGame()">✕</button>
+  </div>
+  <div class="share-box card">
+    <div class="card-label">Inviter des amis</div>
+    <div class="share-row">
+      <div id="share-link" class="share-link-text"></div>
+      <button class="btn-copy" id="copy-btn" onclick="copyLink()">📋 Copier</button>
+    </div>
+    <div style="margin-top:12px;display:flex;justify-content:center;"><div id="qrcode"></div></div>
+  </div>
+  <div id="universe-panel" class="card" style="display:none;">
+    <div class="card-label">Univers actifs <span id="uni-count" style="color:var(--purple-light)"></span></div>
+    <div id="universe-list" class="universe-grid"></div>
+  </div>
+  <div class="section-label" style="margin-top:1rem;">Joueurs</div>
+  <div id="lobby-players" class="player-list"></div>
+  <div id="lobby-hint" class="note"></div>
+  <button onclick="toggleVoice()" id="voice-btn" class="btn-voice">🎤 Vocal OFF</button>
+  <button id="lobby-start-btn" class="btn-primary btn-glow" onclick="startGame()" style="display:none;">Lancer la partie</button>
+  <div id="lobby-error" class="error-msg"></div>
+</div>
+
+<div id="screen-reveal" class="screen">
+  <div class="top-bar">
+    <div class="section-label" id="reveal-waiting"></div>
+    <button class="btn-quit" onclick="quitGame()">✕</button>
+  </div>
+  <div class="char-card reveal-anim">
+    <div id="reveal-char-img" class="char-img-wrap"></div>
+    <div id="reveal-name" class="char-name"></div>
+    <div id="reveal-uni" class="char-uni"></div>
+  </div>
+  <div id="reveal-role-badge" class="role-badge"></div>
+  <div id="reveal-tip" class="note" style="text-align:center;margin-top:1rem;"></div>
+  <button id="reveal-ready-btn" class="btn-primary" onclick="markReady()">J'ai mémorisé ✓</button>
+  <div id="reveal-waiting-others" class="note" style="text-align:center;display:none;">En attente des autres joueurs...</div>
+</div>
+
+<div id="screen-round" class="screen">
+  <div class="top-bar">
+    <div id="round-label" class="section-label"></div>
+    <button class="btn-quit" onclick="quitGame()">✕</button>
+  </div>
+  <div class="progress-bar"><div id="round-progress" class="progress-fill"></div></div>
+  <div id="timer-bar" class="timer-bar" style="display:none;">
+    <span id="timer-text" class="timer-text">35s</span>
+    <div class="timer-track"><div id="timer-fill" class="timer-fill"></div></div>
+  </div>
+  <div id="round-current" class="current-player"></div>
+  <div id="round-hint-area" class="card" style="display:none;">
+    <div class="card-label">Donne un indice en un mot</div>
+    <input id="round-hint-input" class="input" placeholder="Ton indice..." maxlength="25"/>
+    <button class="btn-primary" onclick="submitHint()">Valider</button>
+  </div>
+  <div id="round-wait-area" class="card" style="display:none;">
+    <div class="card-label">En attente de <span id="round-wait-name"></span>...</div>
+  </div>
+  <div id="hints-display" class="card" style="display:none;">
+    <div class="card-label">Indices donnés</div>
+    <div id="hints-list"></div>
+  </div>
+  <div class="card chat-box">
+    <div class="card-label">Chat</div>
+    <div id="chat-messages" class="chat-messages"></div>
+    <div class="chat-input-row">
+      <input id="chat-input" class="input" placeholder="Message..." maxlength="100"/>
+      <button class="btn-send" onclick="sendChat()">➤</button>
+    </div>
+  </div>
+</div>
+
+<div id="screen-vote" class="screen">
+  <div class="top-bar">
+    <div class="section-label">Qui est l'espion ?</div>
+    <button class="btn-quit" onclick="quitGame()">✕</button>
+  </div>
+  <div id="vote-hints" class="card"></div>
+  <div id="vote-buttons"></div>
+  <button id="vote-confirm-btn" class="btn-primary" onclick="submitVote()" disabled>Confirmer mon vote</button>
+  <div id="vote-status" class="note" style="text-align:center;"></div>
+</div>
+
+<div id="screen-result" class="screen">
+  <div class="top-bar">
+    <div id="result-round-info" class="section-label"></div>
+    <button class="btn-quit" onclick="quitGame()">✕</button>
+  </div>
+  <div id="result-icon" class="result-icon"></div>
+  <div id="result-title" class="result-title"></div>
+  <div id="result-sub" class="result-sub"></div>
+  <div class="card" style="margin-top:1rem;">
+    <div class="card-label">Révélation</div>
+    <div class="reveal-row">
+      <div id="res-ally-img" class="char-img-wrap-sm"></div>
+      <div><div id="res-ally-name" class="char-name-sm"></div><div class="char-uni">Alliés</div></div>
+    </div>
+    <div class="reveal-row">
+      <div id="res-spy-img" class="char-img-wrap-sm"></div>
+      <div><div id="res-spy-name" class="char-name-sm"></div><div class="char-uni">Espion · <span id="res-spy-player"></span></div></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:1rem;">
+    <div class="card-label">Scores</div>
+    <div id="scores-list"></div>
+  </div>
+  <div class="card" style="margin-top:1rem;">
+    <div class="card-label">Votes</div>
+    <div id="votes-list"></div>
+  </div>
+  <div id="result-final-title" class="result-final" style="display:none;">🏆 Fin de la partie !</div>
+  <button id="result-next-btn" class="btn-primary btn-glow" style="display:none;" onclick="nextRound()">Manche suivante →</button>
+  <button id="result-restart-btn" class="btn-primary" style="display:none;" onclick="restart()">Rejouer</button>
+  <div id="result-wait" class="note" style="text-align:center;display:none;">En attente de l'hôte...</div>
+</div>
+
+<div id="screen-bonus" class="screen">
+  <div class="top-bar">
+    <div class="section-label">Devinette bonus</div>
+    <button class="btn-quit" onclick="skipBonus()">Passer</button>
+  </div>
+  <div id="bonus-hint" class="note" style="text-align:center;font-size:15px;margin:1rem 0;"></div>
+  <div class="card">
+    <div class="card-label" id="bonus-label">Tape le nom du personnage</div>
+    <input id="bonus-input" class="input" placeholder="Nom du personnage..." maxlength="30"/>
+    <button class="btn-primary btn-glow" style="margin-top:10px;" onclick="submitBonus()">Valider +1 pt</button>
+  </div>
+  <div id="bonus-results" class="card" style="margin-top:1rem;display:none;">
+    <div class="card-label">Résultats bonus</div>
+    <div id="bonus-results-list"></div>
+    <div id="bonus-scores" style="margin-top:10px;"></div>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
