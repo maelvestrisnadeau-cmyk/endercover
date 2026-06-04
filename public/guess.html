@@ -37,7 +37,7 @@
   <input id="home-name" class="input" placeholder="Ton pseudo" maxlength="16"/>
   <button class="btn-primary btn-glow" onclick="createGuessRoom()">Créer une partie</button>
   <div class="divider">ou</div>
-  <input id="home-code" class="input" placeholder="Code de la salle (ex: GABCD)" maxlength="5" style="text-transform:uppercase"/>
+  <input id="home-code" class="input" placeholder="Code de la salle" maxlength="6" style="text-transform:uppercase"/>
   <button class="btn-secondary" onclick="joinGuessRoom()">Rejoindre</button>
   <div class="divider">ou</div>
   <a href="/" class="btn-secondary" style="display:block;text-align:center;text-decoration:none;padding:12px;">← Retour à Endercover</a>
@@ -141,7 +141,7 @@ function joinGuessRoom(){
   myName=document.getElementById('home-name').value.trim();
   const code=document.getElementById('home-code').value.trim().toUpperCase();
   if(!myName)return setError('home-error','Entre ton pseudo !');
-  if(!code)return setError('home-error','Entre le code de la salle !');
+  if(code.length<4)return setError('home-error','Entre le code de la salle !');
   socket.emit('guess_join',{code,playerName:myName});
 }
 

@@ -1,257 +1,195 @@
 const socket = io();
 
-// Toutes les images via PokeAPI (Pokemon) + MyAnimeList CDN (reste)
-// MAL CDN format: https://cdn.myanimelist.net/images/characters/ID1/ID2.jpg
-// On utilise des URLs directes et stables
-
-const CHAR_IMAGES = {
-  // === NARUTO ===
-  'Itachi':       'https://cdn.myanimelist.net/images/characters/9/131317.jpg',
-  'Sasuke':       'https://cdn.myanimelist.net/images/characters/2/284121.jpg',
-  'Naruto':       'https://cdn.myanimelist.net/images/characters/2/284122.jpg',
-  'Kakashi':      'https://cdn.myanimelist.net/images/characters/7/284118.jpg',
-  'Obito':        'https://cdn.myanimelist.net/images/characters/14/284117.jpg',
-  'Minato':       'https://cdn.myanimelist.net/images/characters/13/284115.jpg',
-  'Jiraiya':      'https://cdn.myanimelist.net/images/characters/4/284113.jpg',
-  'Tsunade':      'https://cdn.myanimelist.net/images/characters/6/284114.jpg',
-  'Gaara':        'https://cdn.myanimelist.net/images/characters/3/284120.jpg',
-  'Rock Lee':     'https://cdn.myanimelist.net/images/characters/8/284119.jpg',
-  'Pain':         'https://cdn.myanimelist.net/images/characters/15/284116.jpg',
-  'Madara':       'https://cdn.myanimelist.net/images/characters/11/284111.jpg',
-  'Orochimaru':   'https://cdn.myanimelist.net/images/characters/10/284110.jpg',
-  'Neji':         'https://cdn.myanimelist.net/images/characters/5/284112.jpg',
-  // === DRAGON BALL ===
-  'Goku':         'https://cdn.myanimelist.net/images/characters/4/55651.jpg',
-  'Vegeta':       'https://cdn.myanimelist.net/images/characters/14/55650.jpg',
-  'Gohan':        'https://cdn.myanimelist.net/images/characters/6/55648.jpg',
-  'Freezer':      'https://cdn.myanimelist.net/images/characters/7/55647.jpg',
-  'Cell':         'https://cdn.myanimelist.net/images/characters/8/55646.jpg',
-  'Broly':        'https://cdn.myanimelist.net/images/characters/3/55653.jpg',
-  'Piccolo':      'https://cdn.myanimelist.net/images/characters/9/55645.jpg',
-  'Boo':          'https://cdn.myanimelist.net/images/characters/10/55644.jpg',
-  'Trunks':       'https://cdn.myanimelist.net/images/characters/11/55643.jpg',
-  'Goten':        'https://cdn.myanimelist.net/images/characters/12/55642.jpg',
-  // === ONE PIECE ===
-  'Luffy':        'https://cdn.myanimelist.net/images/characters/9/310307.jpg',
-  'Zoro':         'https://cdn.myanimelist.net/images/characters/3/100534.jpg',
-  'Sanji':        'https://cdn.myanimelist.net/images/characters/5/139313.jpg',
-  'Nami':         'https://cdn.myanimelist.net/images/characters/8/284097.jpg',
-  'Robin':        'https://cdn.myanimelist.net/images/characters/6/284096.jpg',
-  'Shanks':       'https://cdn.myanimelist.net/images/characters/7/284098.jpg',
-  'Ace':          'https://cdn.myanimelist.net/images/characters/4/284095.jpg',
-  'Barbe Blanche':'https://cdn.myanimelist.net/images/characters/2/284094.jpg',
-  'Trafalgar Law':'https://cdn.myanimelist.net/images/characters/1/284093.jpg',
-  'Kaido':        'https://cdn.myanimelist.net/images/characters/15/311795.jpg',
-  'Boa Hancock':  'https://cdn.myanimelist.net/images/characters/13/284091.jpg',
-  'Usopp':        'https://cdn.myanimelist.net/images/characters/12/100535.jpg',
-  'Chopper':      'https://cdn.myanimelist.net/images/characters/11/100536.jpg',
-  'Brook':        'https://cdn.myanimelist.net/images/characters/10/100537.jpg',
-  'Franky':       'https://cdn.myanimelist.net/images/characters/9/100538.jpg',
-  'Jinbe':        'https://cdn.myanimelist.net/images/characters/8/100539.jpg',
-  'Yamato':       'https://cdn.myanimelist.net/images/characters/7/457059.jpg',
-  'Crocodile':    'https://cdn.myanimelist.net/images/characters/6/100540.jpg',
-  'Doflamingo':   'https://cdn.myanimelist.net/images/characters/5/284090.jpg',
-  'Katakuri':     'https://cdn.myanimelist.net/images/characters/4/334490.jpg',
-  'Rayleigh':     'https://cdn.myanimelist.net/images/characters/3/100541.jpg',
-  // === POKEMON (PokeAPI - 100% fiable) ===
-  'Pikachu':      'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png',
-  'Raichu':       'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/26.png',
-  'Dracaufeu':    'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/6.png',
-  'Salamèche':    'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/4.png',
-  'Mewtwo':       'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/150.png',
-  'Mew':          'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/151.png',
-  'Dracolosse':   'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/149.png',
-  'Evoli':        'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/133.png',
-  'Darkrai':      'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/491.png',
-  'Lucario':      'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/448.png',
-  'Lokhlass':     'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/131.png',
-  'Dracovolt':    'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/880.png',
-  'Riolu':        'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/447.png',
-  'Sorcilège':    'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/282.png',
-  'Sacha':        'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png',
-  'Gary':         'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/26.png',
-  // === ATTACK ON TITAN ===
-  'Eren':         'https://cdn.myanimelist.net/images/characters/10/216895.jpg',
-  'Armin':        'https://cdn.myanimelist.net/images/characters/11/216896.jpg',
-  'Levi':         'https://cdn.myanimelist.net/images/characters/2/241413.jpg',
-  'Mikasa':       'https://cdn.myanimelist.net/images/characters/9/215563.jpg',
-  'Hange':        'https://cdn.myanimelist.net/images/characters/12/216897.jpg',
-  'Erwin':        'https://cdn.myanimelist.net/images/characters/7/216898.jpg',
-  'Reiner':       'https://cdn.myanimelist.net/images/characters/8/216899.jpg',
-  'Annie':        'https://cdn.myanimelist.net/images/characters/6/216900.jpg',
-  'Zeke':         'https://cdn.myanimelist.net/images/characters/5/216901.jpg',
-  'Historia':     'https://cdn.myanimelist.net/images/characters/4/216902.jpg',
-  'Connie':       'https://cdn.myanimelist.net/images/characters/13/216904.jpg',
-  'Sasha':        'https://cdn.myanimelist.net/images/characters/14/216905.jpg',
-  // === DEMON SLAYER ===
-  'Tanjiro':      'https://cdn.myanimelist.net/images/characters/6/368527.jpg',
-  'Nezuko':       'https://cdn.myanimelist.net/images/characters/4/368526.jpg',
-  'Zenitsu':      'https://cdn.myanimelist.net/images/characters/5/368528.jpg',
-  'Inosuke':      'https://cdn.myanimelist.net/images/characters/3/368529.jpg',
-  'Rengoku':      'https://cdn.myanimelist.net/images/characters/2/368530.jpg',
-  'Tengen':       'https://cdn.myanimelist.net/images/characters/7/368531.jpg',
-  'Muzan':        'https://cdn.myanimelist.net/images/characters/8/368532.jpg',
-  'Akaza':        'https://cdn.myanimelist.net/images/characters/9/368533.jpg',
-  'Shinobu':      'https://cdn.myanimelist.net/images/characters/10/368534.jpg',
-  'Kanao':        'https://cdn.myanimelist.net/images/characters/11/368535.jpg',
-  'Genya':        'https://cdn.myanimelist.net/images/characters/12/368536.jpg',
-  // === SOLO LEVELING ===
-  'Sung Jinwoo':  'https://cdn.myanimelist.net/images/characters/16/522826.jpg',
-  'Igris':        'https://cdn.myanimelist.net/images/characters/12/522827.jpg',
-  'Cha Hae-In':   'https://cdn.myanimelist.net/images/characters/11/522828.jpg',
-  'Beru':         'https://cdn.myanimelist.net/images/characters/10/522829.jpg',
-  'Thomas Andre': 'https://cdn.myanimelist.net/images/characters/9/522830.jpg',
-  'Ashborn':      'https://cdn.myanimelist.net/images/characters/8/522831.jpg',
-  'Antares':      'https://cdn.myanimelist.net/images/characters/7/522832.jpg',
-  // === RE:ZERO ===
-  'Subaru':       'https://cdn.myanimelist.net/images/characters/6/286751.jpg',
-  'Emilia':       'https://cdn.myanimelist.net/images/characters/5/286752.jpg',
-  'Rem':          'https://cdn.myanimelist.net/images/characters/4/286753.jpg',
-  'Ram':          'https://cdn.myanimelist.net/images/characters/3/286754.jpg',
-  'Beatrice':     'https://cdn.myanimelist.net/images/characters/2/286755.jpg',
-  'Roswaal':      'https://cdn.myanimelist.net/images/characters/7/286756.jpg',
-  'Reinhard':     'https://cdn.myanimelist.net/images/characters/8/286757.jpg',
-  'Echidna':      'https://cdn.myanimelist.net/images/characters/9/286758.jpg',
-  // === CITY HUNTER ===
-  'Ryo Saeba':    'https://cdn.myanimelist.net/images/characters/5/68816.jpg',
-  'Kaori':        'https://cdn.myanimelist.net/images/characters/6/68817.jpg',
-  'Umibozu':      'https://cdn.myanimelist.net/images/characters/7/68818.jpg',
-  // === MHA ===
-  'Deku':         'https://cdn.myanimelist.net/images/characters/9/310860.jpg',
-  'Bakugo':       'https://cdn.myanimelist.net/images/characters/10/310861.jpg',
-  'Todoroki':     'https://cdn.myanimelist.net/images/characters/8/310862.jpg',
-  'All Might':    'https://cdn.myanimelist.net/images/characters/7/310863.jpg',
-  'Uraraka':      'https://cdn.myanimelist.net/images/characters/6/310864.jpg',
-  'Shigaraki':    'https://cdn.myanimelist.net/images/characters/4/310866.jpg',
-  'All For One':  'https://cdn.myanimelist.net/images/characters/3/310867.jpg',
-  'Hawks':        'https://cdn.myanimelist.net/images/characters/2/310868.jpg',
-  'Endeavor':     'https://cdn.myanimelist.net/images/characters/11/310869.jpg',
-  // === DR STONE ===
-  'Senku':        'https://cdn.myanimelist.net/images/characters/2/388868.jpg',
-  'Tsukasa':      'https://cdn.myanimelist.net/images/characters/3/388869.jpg',
-  'Chrome':       'https://cdn.myanimelist.net/images/characters/4/388870.jpg',
-  'Kohaku':       'https://cdn.myanimelist.net/images/characters/5/388871.jpg',
-  'Gen':          'https://cdn.myanimelist.net/images/characters/6/388872.jpg',
-  'Ryusui':       'https://cdn.myanimelist.net/images/characters/7/388873.jpg',
-  'Suika':        'https://cdn.myanimelist.net/images/characters/8/388874.jpg',
-  // === JJK ===
-  'Itadori':      'https://cdn.myanimelist.net/images/characters/1/494947.jpg',
-  'Megumi':       'https://cdn.myanimelist.net/images/characters/2/494948.jpg',
-  'Gojo':         'https://cdn.myanimelist.net/images/characters/3/494949.jpg',
-  'Sukuna':       'https://cdn.myanimelist.net/images/characters/4/494950.jpg',
-  'Nobara':       'https://cdn.myanimelist.net/images/characters/5/494951.jpg',
-  'Nanami':       'https://cdn.myanimelist.net/images/characters/6/494952.jpg',
-  'Yuta':         'https://cdn.myanimelist.net/images/characters/7/494953.jpg',
-  'Mahito':       'https://cdn.myanimelist.net/images/characters/10/494956.jpg',
-  // === BLUE LOCK ===
-  'Isagi':        'https://cdn.myanimelist.net/images/characters/1/527784.jpg',
-  'Bachira':      'https://cdn.myanimelist.net/images/characters/2/527785.jpg',
-  'Rin':          'https://cdn.myanimelist.net/images/characters/3/527786.jpg',
-  'Chigiri':      'https://cdn.myanimelist.net/images/characters/4/527787.jpg',
-  'Reo':          'https://cdn.myanimelist.net/images/characters/5/527788.jpg',
-  'Nagi':         'https://cdn.myanimelist.net/images/characters/6/527789.jpg',
-  'Kaiser':       'https://cdn.myanimelist.net/images/characters/7/527790.jpg',
-  'Barou':        'https://cdn.myanimelist.net/images/characters/8/527791.jpg',
-  // === KUROKO ===
-  'Kuroko':       'https://cdn.myanimelist.net/images/characters/3/138554.jpg',
-  'Kagami':       'https://cdn.myanimelist.net/images/characters/4/138555.jpg',
-  'Aomine':       'https://cdn.myanimelist.net/images/characters/5/138556.jpg',
-  'Kise':         'https://cdn.myanimelist.net/images/characters/6/138557.jpg',
-  'Midorima':     'https://cdn.myanimelist.net/images/characters/7/138558.jpg',
-  'Akashi':       'https://cdn.myanimelist.net/images/characters/9/138560.jpg',
-  // === FAIRY TAIL ===
-  'Natsu':        'https://cdn.myanimelist.net/images/characters/9/153244.jpg',
-  'Lucy':         'https://cdn.myanimelist.net/images/characters/8/153245.jpg',
-  'Erza':         'https://cdn.myanimelist.net/images/characters/7/153246.jpg',
-  'Gray':         'https://cdn.myanimelist.net/images/characters/6/153247.jpg',
-  'Makarov':      'https://cdn.myanimelist.net/images/characters/5/153248.jpg',
-  'Gildarts':     'https://cdn.myanimelist.net/images/characters/4/153249.jpg',
-  'Laxus':        'https://cdn.myanimelist.net/images/characters/3/153250.jpg',
-  'Zeref':        'https://cdn.myanimelist.net/images/characters/2/153251.jpg',
-  'Acnologia':    'https://cdn.myanimelist.net/images/characters/11/153252.jpg',
-  'Wendy':        'https://cdn.myanimelist.net/images/characters/10/153253.jpg',
-  'Jellal':       'https://cdn.myanimelist.net/images/characters/12/153254.jpg',
-  'Mirajane':     'https://cdn.myanimelist.net/images/characters/13/153255.jpg',
-  'Cana':         'https://cdn.myanimelist.net/images/characters/14/153256.jpg',
-  'Mystogan':     'https://cdn.myanimelist.net/images/characters/15/153257.jpg',
-  'Elfman':       'https://cdn.myanimelist.net/images/characters/16/153258.jpg',
-  // === BLEACH ===
-  'Ichigo':       'https://cdn.myanimelist.net/images/characters/9/21135.jpg',
-  'Rukia':        'https://cdn.myanimelist.net/images/characters/8/21134.jpg',
-  'Aizen':        'https://cdn.myanimelist.net/images/characters/4/21138.jpg',
-  'Byakuya':      'https://cdn.myanimelist.net/images/characters/7/21136.jpg',
-  'Zaraki':       'https://cdn.myanimelist.net/images/characters/6/21137.jpg',
-  'Renji':        'https://cdn.myanimelist.net/images/characters/5/21139.jpg',
-  'Orihime':      'https://cdn.myanimelist.net/images/characters/3/21140.jpg',
-  'Uryu':         'https://cdn.myanimelist.net/images/characters/2/21141.jpg',
-  'Urahara':      'https://cdn.myanimelist.net/images/characters/11/21142.jpg',
-  'Yoruichi':     'https://cdn.myanimelist.net/images/characters/10/21143.jpg',
-  'Yhwach':       'https://cdn.myanimelist.net/images/characters/12/21144.jpg',
-  'Grimmjow':     'https://cdn.myanimelist.net/images/characters/13/21145.jpg',
-  'Ulquiorra':    'https://cdn.myanimelist.net/images/characters/14/21146.jpg',
-  'Toshiro':      'https://cdn.myanimelist.net/images/characters/15/21147.jpg',
-  'Shunsui':      'https://cdn.myanimelist.net/images/characters/16/21148.jpg',
-  // === ONE PUNCH MAN ===
-  'Saitama':      'https://cdn.myanimelist.net/images/characters/6/296816.jpg',
-  'Genos':        'https://cdn.myanimelist.net/images/characters/5/296817.jpg',
-  'Garou':        'https://cdn.myanimelist.net/images/characters/4/296818.jpg',
-  'Bang':         'https://cdn.myanimelist.net/images/characters/3/296819.jpg',
-  'Tornado':      'https://cdn.myanimelist.net/images/characters/2/296820.jpg',
-  'Metal Bat':    'https://cdn.myanimelist.net/images/characters/7/296821.jpg',
-  'King':         'https://cdn.myanimelist.net/images/characters/8/296822.jpg',
-  'Flashy Flash': 'https://cdn.myanimelist.net/images/characters/9/296823.jpg',
-  'Boros':        'https://cdn.myanimelist.net/images/characters/10/296824.jpg',
-  'Zombieman':    'https://cdn.myanimelist.net/images/characters/11/296825.jpg',
-  'Atomic Samurai':'https://cdn.myanimelist.net/images/characters/12/296826.jpg',
-  'Child Emperor':'https://cdn.myanimelist.net/images/characters/13/296827.jpg',
-  // === BLACK CLOVER ===
-  'Asta':         'https://cdn.myanimelist.net/images/characters/9/345652.jpg',
-  'Yuno':         'https://cdn.myanimelist.net/images/characters/8/345653.jpg',
-  'Yami':         'https://cdn.myanimelist.net/images/characters/7/345654.jpg',
-  'Noelle':       'https://cdn.myanimelist.net/images/characters/6/345655.jpg',
-  'Julius':       'https://cdn.myanimelist.net/images/characters/5/345656.jpg',
-  'Luck':         'https://cdn.myanimelist.net/images/characters/4/345657.jpg',
-  'Finral':       'https://cdn.myanimelist.net/images/characters/3/345658.jpg',
-  'Magna':        'https://cdn.myanimelist.net/images/characters/2/345659.jpg',
-  'Mereoleona':   'https://cdn.myanimelist.net/images/characters/11/345660.jpg',
-  'Secre':        'https://cdn.myanimelist.net/images/characters/10/345661.jpg',
-  'Zagred':       'https://cdn.myanimelist.net/images/characters/12/345662.jpg',
-  'Zenon':        'https://cdn.myanimelist.net/images/characters/13/345663.jpg',
-  // === FIRE FORCE ===
-  'Shinra':       'https://cdn.myanimelist.net/images/characters/9/387479.jpg',
-  'Arthur':       'https://cdn.myanimelist.net/images/characters/8/387480.jpg',
-  'Tamaki':       'https://cdn.myanimelist.net/images/characters/7/387481.jpg',
-  'Obi':          'https://cdn.myanimelist.net/images/characters/6/387482.jpg',
-  'Maki':         'https://cdn.myanimelist.net/images/characters/5/387483.jpg',
-  'Burns':        'https://cdn.myanimelist.net/images/characters/4/387484.jpg',
-  'Joker':        'https://cdn.myanimelist.net/images/characters/3/387485.jpg',
-  'Sho':          'https://cdn.myanimelist.net/images/characters/2/387486.jpg',
-  'Benimaru':     'https://cdn.myanimelist.net/images/characters/11/387487.jpg',
-  'Viktor':       'https://cdn.myanimelist.net/images/characters/10/387488.jpg',
-  'Nataku':       'https://cdn.myanimelist.net/images/characters/12/387489.jpg',
+// IDs MAL des personnages - chargés dynamiquement via Jikan API dans le navigateur
+const CHAR_MAL_IDS = {
+  // Naruto
+  'Naruto':17,'Sasuke':13,'Itachi':5,'Kakashi':85,'Obito':10,
+  'Minato':1,'Jiraiya':9,'Tsunade':8,'Gaara':42,'Rock Lee':64,
+  'Pain':3932,'Madara':11,'Orochimaru':7,'Neji':65,'Shikamaru':63,
+  'Hinata':98,'Sakura':105,'Hashirama':2,'Tobirama':3,'Kisame':11791,
+  'Deidara':12,'Sasori':2153,'Konan':3131,'Temari':40,'Kankuro':41,
+  'Choji':67,'Ino':68,'Kiba':66,'Shino':69,'Kurama':3134,
+  'Killer Bee':10,$10:'Asuma',Asuma:107,'Danzo':3135,
+  // Dragon Ball
+  'Goku':246,'Vegeta':247,'Gohan':248,'Freezer':249,'Cell':250,
+  'Broly':251,'Piccolo':252,'Boo':253,'Trunks':254,'Goten':255,
+  'Krilin':256,'Bulma':257,'Bardock':258,'Beerus':259,'Whis':260,
+  'Jiren':261,'Goku Black':262,'Zamasu':263,'Android 17':264,'Android 18':265,
+  // One Piece
+  'Luffy':40,'Zoro':60,'Sanji':62,'Nami':61,'Robin':63,
+  'Shanks':64,'Ace':65,'Barbe Blanche':66,'Trafalgar Law':67,'Kaido':68,
+  'Boa Hancock':69,'Usopp':70,'Chopper':71,'Brook':72,'Franky':73,
+  'Jinbe':74,'Yamato':75,'Mihawk':76,'Sabo':77,'Garp':78,
+  'Akainu':79,'Big Mom':80,'Blackbeard':81,'Doflamingo':82,'Katakuri':83,
+  // Attack on Titan
+  'Eren':1163,'Levi':1409,'Mikasa':1164,'Armin':1165,'Hange':1410,
+  'Erwin':1411,'Reiner':1412,'Annie':1166,'Zeke':1413,'Historia':1414,
+  'Connie':1415,'Sasha':1416,'Jean':1417,
+  // Demon Slayer
+  'Tanjiro':163268,'Nezuko':163269,'Zenitsu':163270,'Inosuke':163271,
+  'Rengoku':163272,'Tengen':163273,'Muzan':163274,'Akaza':163275,
+  'Shinobu':163276,'Kanao':163277,'Genya':163278,'Mitsuri':163279,
+  'Obanai':163280,'Muichiro':163281,'Gyomei':163282,'Sanemi':163283,
+  'Douma':163284,'Kokushibo':163285,'Yoriichi':163286,
+  // JJK
+  'Itadori':177947,'Megumi':177948,'Gojo':177949,'Sukuna':177950,
+  'Nobara':177951,'Nanami':177952,'Yuta':177953,'Mahito':177954,
+  'Hakari':177955,'Choso':177956,'Toge':177957,'Panda':177958,
+  'Todo':177959,'Geto':177960,'Jogo':177961,'Kenjaku':177962,
+  // MHA
+  'Deku':57337,'Bakugo':57338,'Todoroki':57339,'All Might':57340,
+  'Uraraka':57341,'Shigaraki':57342,'All For One':57343,'Hawks':57344,
+  'Endeavor':57345,'Iida':57346,'Tsuyu':57347,'Twice':57348,
+  'Toga':57349,'Dabi':57350,'Mirko':57351,'Eraser Head':57352,
+  // Fairy Tail
+  'Natsu':11920,'Lucy':11921,'Erza':11922,'Gray':11923,
+  'Makarov':11924,'Gildarts':11925,'Laxus':11926,'Zeref':11927,
+  'Acnologia':11928,'Wendy':11929,'Jellal':11930,'Mirajane':11931,
+  'Mystogan':11932,'Elfman':11933,'Cana':11934,'Gajeel':11935,
+  // Bleach
+  'Ichigo':2,'Rukia':3,'Aizen':4,'Byakuya':5,'Zaraki':6,
+  'Renji':7,'Orihime':8,'Uryu':9,'Urahara':10,'Yoruichi':11,
+  'Yhwach':12,'Grimmjow':13,'Ulquiorra':14,'Toshiro':15,'Shunsui':16,
+  'Gin':17,'Nelliel':18,'Starrk':19,'Chad':20,
+  // One Punch Man
+  'Saitama':137663,'Genos':137664,'Garou':137665,'Bang':137666,
+  'Tornado':137667,'Metal Bat':137668,'King':137669,'Flashy Flash':137670,
+  'Boros':137671,'Zombieman':137672,'Fubuki':137673,'Mumen Rider':137674,
+  'Darkshine':137675,'Speed-o-Sound Sonic':137676,'Atomic Samurai':137677,
+  // Black Clover
+  'Asta':148448,'Yuno':148449,'Yami':148450,'Noelle':148451,
+  'Julius':148452,'Luck':148453,'Magna':148454,'Mereoleona':148455,
+  'Zenon':148456,'Vanessa':148457,'Dante':148458,'Licht':148459,
+  // Fire Force
+  'Shinra':170149,'Arthur':170150,'Tamaki':170151,'Obi':170152,
+  'Maki':170153,'Burns':170154,'Joker':170155,'Sho':170156,
+  'Benimaru':170157,'Viktor':170158,
+  // Solo Leveling
+  'Sung Jinwoo':254571,'Igris':254572,'Cha Hae-In':254573,'Beru':254574,
+  'Thomas Andre':254575,'Ashborn':254576,
+  // Blue Lock
+  'Isagi':192900,'Rin':192901,'Bachira':192902,'Chigiri':192903,
+  'Reo':192904,'Nagi':192905,'Kaiser':192906,'Barou':192907,
+  'Shidou':192908,'Sae':192909,'Ego':192910,
+  // Kuroko
+  'Kuroko':54231,'Kagami':54232,'Aomine':54233,'Kise':54234,
+  'Midorima':54235,'Murasakibara':54236,'Akashi':54237,'Hyuga':54238,
+  'Momoi':54239,'Kiyoshi':54240,
+  // Re:Zero
+  'Subaru':118399,'Emilia':118400,'Rem':118401,'Ram':118402,
+  'Beatrice':118403,'Roswaal':118404,'Reinhard':118405,'Echidna':118406,
+  'Puck':118407,'Otto':118408,'Garfiel':118409,
+  // Dr Stone
+  'Senku':179073,'Tsukasa':179074,'Chrome':179075,'Kohaku':179076,
+  'Gen':179077,'Ryusui':179078,'Suika':179079,'Taiju':179080,
+  // City Hunter
+  'Ryo Saeba':1263,'Kaori':1264,'Umibozu':1265,
 };
 
-// Fallback emoji par univers si image cassée
-const UNI_EMOJI = {
-  'Naruto':'🔥','Dragon Ball':'🐉','One Piece':'🍖','Pokémon':'⚡',
-  'Attack on Titan':'⚔️','Demon Slayer':'💧','Solo Leveling':'🗡️',
-  'Re:Zero':'🌸','City Hunter':'🔫','My Hero Academia':'💪',
-  'Dr. Stone':'🔬','Jujutsu Kaisen':'👁️','Blue Lock':'⚽',
-  'Kuroko no Basket':'🏀','Fairy Tail':'✨','Bleach':'🌙',
-  'One Punch Man':'👊','Black Clover':'🍀','Fire Force':'🔥',
+// Cache des images déjà chargées
+const imgCache = {};
+
+// Pokemon via PokeAPI (100% fiable, pas besoin de Jikan)
+const POKEMON_IMGS = {
+  'Pikachu':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png',
+  'Raichu':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/26.png',
+  'Dracaufeu':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/6.png',
+  'Salamèche':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/4.png',
+  'Mewtwo':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/150.png',
+  'Mew':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/151.png',
+  'Dracolosse':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/149.png',
+  'Evoli':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/133.png',
+  'Darkrai':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/491.png',
+  'Lucario':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/448.png',
+  'Lokhlass':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/131.png',
+  'Dracovolt':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/880.png',
+  'Riolu':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/447.png',
+  'Sorcilège':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/282.png',
+  'Sacha':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png',
+  'Gary':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/26.png',
+  'Méga Rayquaza':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/384.png',
+  'Reshiram':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/643.png',
+  'Zekrom':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/644.png',
+  'Kyogre':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/382.png',
+  'Groudon':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/383.png',
+  'Ho-Oh':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/250.png',
+  'Lugia':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/249.png',
+  'Dialga':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/483.png',
+  'Giratina':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/487.png',
+  'Arceus':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/493.png',
+  'Ditto':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/132.png',
+  'Gengar':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/94.png',
+  'Tyranocif':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/248.png',
+  'Léviator':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/130.png',
+  'Drattak':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/148.png',
+  'Noctali':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/197.png',
+  'Espeon':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/196.png',
+  'Umbreon':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/197.png',
+  'Sulfura':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/146.png',
+  'Artikodin':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/144.png',
+  'Togekiss':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/468.png',
+  'Mackogneur':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/68.png',
+  'Électhor':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/145.png',
 };
+
+// Fonction principale pour récupérer une image
+async function loadCharImage(name) {
+  if (imgCache[name]) return imgCache[name];
+
+  // Pokemon : PokeAPI direct
+  if (POKEMON_IMGS[name]) {
+    imgCache[name] = POKEMON_IMGS[name];
+    return POKEMON_IMGS[name];
+  }
+
+  // Autres : Jikan API (chargé dans le navigateur, pas depuis le serveur)
+  const malId = CHAR_MAL_IDS[name];
+  if (malId) {
+    try {
+      const r = await fetch(`https://api.jikan.moe/v4/characters/${malId}`, {
+        headers: { 'Accept': 'application/json' }
+      });
+      if (r.ok) {
+        const d = await r.json();
+        const url = d.data?.images?.jpg?.image_url;
+        if (url) { imgCache[name] = url; return url; }
+      }
+    } catch(e) {}
+  }
+
+  return null;
+}
 
 function getImg(name, large) {
-  const url = CHAR_IMAGES[name];
   const h = large ? '200px' : '64px';
   const r = large ? '12px' : '8px';
-  if (!url) return `<div style="font-size:${large?'48px':'28px'};display:flex;align-items:center;justify-content:center;height:${h};">🎭</div>`;
-  return `<img src="${url}" alt="${name}" style="max-height:${h};max-width:100%;object-fit:cover;border-radius:${r};" onerror="this.outerHTML='<div style=\\'font-size:${large?48:28}px;display:flex;align-items:center;justify-content:center;height:${h}\\'>🎭</div>'">`;
+  const id = `img-${name.replace(/[^a-zA-Z0-9]/g,'_')}-${large?'lg':'sm'}`;
+
+  // Si déjà en cache, retourner directement
+  if (imgCache[name]) {
+    return `<img src="${imgCache[name]}" alt="${name}" style="max-height:${h};max-width:100%;object-fit:cover;border-radius:${r};" onerror="this.outerHTML='<div style=\\'font-size:${large?48:28}px;display:flex;align-items:center;justify-content:center;height:${h}\\'>🎭</div>'">`;
+  }
+
+  // Sinon placeholder + chargement async
+  const placeholder = `<div id="${id}" style="height:${h};display:flex;align-items:center;justify-content:center;font-size:${large?'32px':'20px'};color:var(--muted);">⏳</div>`;
+
+  // Charger l'image en arrière-plan
+  loadCharImage(name).then(url => {
+    const el = document.getElementById(id);
+    if (el && url) {
+      el.outerHTML = `<img src="${url}" alt="${name}" style="max-height:${h};max-width:100%;object-fit:cover;border-radius:${r};" onerror="this.outerHTML='<div style=\\'font-size:${large?48:28}px;display:flex;align-items:center;justify-content:center;height:${h}\\'>🎭</div>'">`;
+    } else if (el) {
+      el.textContent = '🎭';
+      el.style.fontSize = large ? '48px' : '28px';
+    }
+  });
+
+  return placeholder;
 }
 
 let myName='',myRoom='',isHost=false,selectedVote=null,allHints=[{},{}],qrGenerated=false;
 let selectedUniverses=[];
-const ALL_UNIVERSES=['Naruto','Dragon Ball','One Piece','Pokémon','Attack on Titan','Demon Slayer','Solo Leveling','Re:Zero','City Hunter','My Hero Academia','Dr. Stone','Jujutsu Kaisen','Blue Lock','Kuroko no Basket','Fairy Tail','Bleach','One Punch Man','Black Clover','Fire Force'];
+const ALL_UNIVERSES=['Naruto','Dragon Ball','One Piece','Pokémon','Attack on Titan','Demon Slayer','Fairy Tail','Bleach','One Punch Man','Black Clover','Fire Force','Jujutsu Kaisen','My Hero Academia','Solo Leveling','Blue Lock','Kuroko no Basket','Re:Zero','Dr. Stone','City Hunter'];
 
 function initParticles(){const c=document.getElementById('particles');if(!c)return;for(let i=0;i<20;i++){const p=document.createElement('div');p.className='particle';const s=Math.random()*4+2;p.style.cssText=`width:${s}px;height:${s}px;left:${Math.random()*100}%;background:hsl(${220+Math.random()*60},70%,60%);animation-duration:${8+Math.random()*12}s;animation-delay:${Math.random()*8}s;`;c.appendChild(p);}}
 
@@ -369,7 +307,7 @@ socket.on('bonus_phase',({isSpy,hint})=>{
 });
 function submitBonus(){if(myBonusDone)return;const guess=document.getElementById('bonus-input').value.trim();if(!guess)return;myBonusDone=true;socket.emit('submit_bonus',{guess});document.getElementById('bonus-input').disabled=true;const btn=document.querySelector('#screen-bonus .btn-primary');if(btn)btn.disabled=true;}
 function skipBonus(){if(myBonusDone)return;myBonusDone=true;socket.emit('skip_bonus');}
-socket.on('bonus_result',({playerName,guess,correct,scores,allDone})=>{
+socket.on('bonus_result',({playerName,guess,correct,scores})=>{
   const list=document.getElementById('bonus-results-list');
   document.getElementById('bonus-results').style.display='block';
   const div=document.createElement('div');div.className='vote-result-row';

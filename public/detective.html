@@ -349,7 +349,14 @@ function nextRound(){
   round++;
   selectedGuess=null;
   hintsRevealed=0;
-  if(poolIndex>=shuffledPool.length){shuffledPool=[...shuffledPool].sort(()=>Math.random()-0.5);poolIndex=0;}
+  // Anti-répétition : on épuise tout le pool avant de recommencer
+  if(poolIndex>=shuffledPool.length){
+    // Remélanger en évitant que le premier soit le même que le dernier
+    const last=shuffledPool[shuffledPool.length-1];
+    do{ shuffledPool=[...shuffledPool].sort(()=>Math.random()-0.5); }
+    while(shuffledPool.length>1 && shuffledPool[0]===last);
+    poolIndex=0;
+  }
   currentChar=shuffledPool[poolIndex++];
   document.getElementById('game-round-label').textContent=`Personnage ${round}/${totalRounds}`;
   document.getElementById('game-score').textContent=score;
