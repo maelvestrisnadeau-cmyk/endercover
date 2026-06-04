@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Détective Multijoueur — Endercover</title>
+  <link rel="stylesheet" href="style.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    .hint-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:0.9rem 1.1rem;margin-bottom:8px;animation:slide-in 0.3s ease;}
+    @keyframes slide-in{from{transform:translateY(-8px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+    .hint-row{display:flex;align-items:center;gap:8px;}
+    .hint-number{width:24px;height:24px;border-radius:50%;background:var(--purple);color:#fff;font-size:11px;font-weight:700;text-align:center;line-height:24px;flex-shrink:0;}
+    .pts-badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;margin-left:auto;flex-shrink:0;}
+    .pts-5{background:rgba(29,158,117,0.2);color:#5DCAA5;border:1px solid rgba(29,158,117,0.3);}
+    .pts-4{background:rgba(83,74,183,0.2);color:#7F77DD;border:1px solid rgba(83,74,183,0.3);}
+    .pts-3{background:rgba(239,159,39,0.2);color:#EF9F27;border:1px solid rgba(239,159,39,0.3);}
+    .pts-2{background:rgba(226,75,74,0.2);color:#E24B4A;border:1px solid rgba(226,75,74,0.3);}
+    .pts-1{background:rgba(139,137,160,0.2);color:#8b89a0;border:1px solid rgba(139,137,160,0.3);}
+    .player-score-row{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--card);border:1px solid var(--border);border-radius:10px;margin-bottom:6px;transition:all 0.3s;}
+    .player-score-row.winner-flash{background:rgba(83,74,183,0.2);border-color:var(--purple-light);}
+    .score-pts{margin-left:auto;font-weight:700;color:var(--purple-light);font-size:16px;}
+    .answer-input-row{display:flex;gap:8px;}
+    .answer-input-row .input{flex:1;}
+    .btn-answer{padding:10px 16px;background:var(--purple);color:#fff;border:none;border-radius:10px;cursor:pointer;font-size:14px;font-weight:600;white-space:nowrap;}
+    .btn-answer:hover{background:var(--purple-light);}
+    .btn-answer:disabled{opacity:0.4;cursor:not-allowed;}
+    .round-winner-banner{text-align:center;padding:14px;border-radius:16px;font-size:16px;font-weight:700;margin:8px 0;animation:pulse-in 0.4s ease;}
+    @keyframes pulse-in{0%{transform:scale(0.9);opacity:0;}100%{transform:scale(1);opacity:1;}}
+    .banner-correct{background:rgba(29,158,117,0.15);color:#5DCAA5;border:1px solid rgba(29,158,117,0.3);}
+    .banner-reveal{background:rgba(226,75,74,0.1);color:#E24B4A;border:1px solid rgba(226,75,74,0.2);}
+    .waiting-answers{font-size:13px;color:var(--muted);text-align:center;padding:8px;animation:blink 1.5s infinite;}
+    @keyframes blink{0%,100%{opacity:1;}50%{opacity:0.4;}}
+    .hint-progress{height:3px;background:var(--bg2);border-radius:2px;margin-bottom:1rem;}
+    .hint-progress-fill{height:100%;background:var(--purple-light);border-radius:2px;transition:width 0.5s;}
+    .share-row{display:flex;align-items:center;gap:8px;margin-top:6px;}
+    .share-link-text{flex:1;font-size:12px;font-family:monospace;color:#7F77DD;word-break:break-all;}
+    .btn-copy{padding:6px 12px;font-size:12px;background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;cursor:pointer;white-space:nowrap;flex-shrink:0;}
+    #qrcode canvas,#qrcode img{border-radius:8px;}
+    .char-img-reveal{width:100%;height:160px;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:12px;background:var(--bg2);margin:8px 0;}
+    .uni-filter{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+    .uni-pill{padding:4px 10px;border-radius:20px;font-size:12px;cursor:pointer;background:var(--card);border:1px solid var(--border);color:var(--muted);transition:all 0.15s;}
+    .uni-pill.active{background:rgba(83,74,183,0.2);border-color:var(--purple-light);color:var(--text);}
+    .answered-badge{font-size:11px;padding:2px 8px;border-radius:20px;background:rgba(29,158,117,0.15);color:#5DCAA5;margin-left:auto;}
+    .wrong-badge{font-size:11px;padding:2px 8px;border-radius:20px;background:rgba(226,75,74,0.1);color:#E24B4A;margin-left:auto;}
+  </style>
+</head>
+<body>
+
+<div id="screen-home" class="screen active">
+  <a href="/" style="font-size:13px;color:var(--muted);text-decoration:none;display:block;margin-top:1.5rem;">← Endercover</a>
+  <div class="logo" style="margin-top:1rem;">🔍 Détective Multi</div>
+  <div class="tagline">Sois le premier à trouver le personnage !</div>
+  <input id="home-name" class="input" placeholder="Ton pseudo" maxlength="16"/>
+  <div class="card">
+    <div class="card-label">Nombre de manches</div>
+    <select id="home-rounds" class="input" style="width:auto;">
+      <option value="5">5 manches</option>
+      <option value="8" selected>8 manches</option>
+      <option value="10">10 manches</option>
+      <option value="15">15 manches</option>
+    </select>
+  </div>
+  <div class="card">
+    <div class="card-label">Univers</div>
+    <div class="uni-filter" id="uni-filter"></div>
+  </div>
+  <button class="btn-primary btn-glow" onclick="createRoom()">Créer une salle</button>
+  <div class="divider">ou</div>
+  <input id="home-code" class="input" placeholder="Code de la salle" maxlength="6" style="text-transform:uppercase"/>
+  <button class="btn-secondary" onclick="joinRoom()">Rejoindre</button>
+  <div id="home-error" class="error-msg"></div>
+</div>
+
+<div id="screen-lobby" class="screen">
+  <div class="top-bar">
+    <div>
+      <div class="section-label">Code de la salle</div>
+      <div id="lobby-code" class="room-code" style="font-size:24px;letter-spacing:4px;padding:8px;"></div>
+    </div>
+    <button class="btn-quit" onclick="location.reload()">✕</button>
+  </div>
+  <div class="card">
+    <div class="card-label">Inviter des amis</div>
+    <div class="share-row">
+      <div id="share-link" class="share-link-text"></div>
+      <button class="btn-copy" id="copy-btn" onclick="copyLink()">📋 Copier</button>
+    </div>
+    <div style="margin-top:10px;display:flex;justify-content:center;"><div id="qrcode"></div></div>
+  </div>
+  <div class="section-label" style="margin-top:1rem;">Joueurs (<span id="player-count">0</span>/5)</div>
+  <div id="lobby-players" class="player-list"></div>
+  <div id="lobby-hint" class="note" style="text-align:center;"></div>
+  <button id="start-btn" class="btn-primary btn-glow" onclick="startGame()" style="display:none;">Lancer la partie</button>
+</div>
+
+<div id="screen-game" class="screen">
+  <div class="top-bar">
+    <div id="game-round-label" class="section-label"></div>
+    <button class="btn-quit" onclick="location.reload()">✕</button>
+  </div>
+  <div class="hint-progress"><div id="hint-progress-fill" class="hint-progress-fill" style="width:0%"></div></div>
+
+  <div id="scores-bar" class="card" style="margin-bottom:12px;">
+    <div class="card-label">Scores</div>
+    <div id="scores-list"></div>
+  </div>
+
+  <div id="hints-container"></div>
+
+  <div id="round-winner-area"></div>
+
+  <div id="answer-area" class="card">
+    <div class="card-label">Qui est ce personnage ?</div>
+    <div class="answer-input-row">
+      <input id="answer-input" class="input" placeholder="Tape ton réponse..." maxlength="40" onkeydown="if(event.key==='Enter')submitAnswer()"/>
+      <button class="btn-answer" id="answer-btn" onclick="submitAnswer()">Répondre</button>
+    </div>
+    <div id="my-answer-status" style="font-size:13px;color:var(--muted);margin-top:6px;min-height:18px;"></div>
+  </div>
+
+  <div id="hint-btn-area" style="margin-top:8px;display:none;">
+    <button class="btn-primary" onclick="revealNextHint()">Indice suivant 💡 (<span id="hints-left">?</span> restants)</button>
+  </div>
+</div>
+
+<div id="screen-result" class="screen">
+  <div class="result-icon">🏆</div>
+  <div class="result-title">Partie terminée !</div>
+  <div class="card" style="margin-top:1rem;">
+    <div class="card-label">Classement final</div>
+    <div id="final-scores"></div>
+  </div>
+  <button id="restart-btn" class="btn-primary btn-glow" style="display:none;margin-top:1rem;" onclick="restartGame()">Rejouer</button>
+  <div id="result-wait" class="note" style="text-align:center;display:none;">En attente de l'hôte...</div>
+  <a href="/" class="btn-secondary" style="display:block;text-align:center;text-decoration:none;padding:12px;margin-top:8px;">← Retour</a>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+
+const UNIVERSES = ['Naruto','Dragon Ball','One Piece','Pokémon','Attack on Titan','Demon Slayer','Fairy Tail','Bleach','One Punch Man','Black Clover','Fire Force','Jujutsu Kaisen','My Hero Academia','Solo Leveling','Blue Lock','Kuroko no Basket','Re:Zero','Dr. Stone','City Hunter'];
+
+const POKEMON_IMGS = {
+  'Pikachu':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png',
+  'Raichu':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/26.png',
+  'Dracaufeu':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/6.png',
+  'Salamèche':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/4.png',
+  'Mewtwo':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/150.png',
+  'Mew':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/151.png',
+  'Dracolosse':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/149.png',
+  'Evoli':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/133.png',
+  'Darkrai':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/491.png',
+  'Lucario':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/448.png',
+  'Lokhlass':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/131.png',
+  'Arceus':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/493.png',
+  'Gengar':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/94.png',
+  'Lucario':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/448.png',
+};
+
+const CHAR_MAL_IDS = {
+  'Naruto':17,'Sasuke':13,'Itachi':5,'Kakashi':85,'Gaara':42,'Minato':1,'Jiraiya':9,'Tsunade':8,'Madara':11,'Pain':3932,
+  'Goku':246,'Vegeta':247,'Gohan':248,'Freezer':249,'Broly':251,'Cell':250,'Piccolo':252,'Boo':253,'Trunks':254,
+  'Luffy':40,'Zoro':60,'Sanji':62,'Shanks':64,'Ace':65,'Nami':61,'Robin':63,'Mihawk':76,'Blackbeard':81,'Kaido':68,
+  'Eren':1163,'Levi':1409,'Mikasa':1164,'Armin':1165,'Erwin':1411,'Hange':1410,'Reiner':1412,'Annie':1166,'Zeke':1413,
+  'Tanjiro':163268,'Nezuko':163269,'Zenitsu':163270,'Inosuke':163271,'Rengoku':163272,'Muzan':163274,'Akaza':163275,'Shinobu':163276,'Kokushibo':163285,'Yoriichi':163286,
+  'Natsu':11920,'Lucy':11921,'Erza':11922,'Gray':11923,'Makarov':11924,'Gildarts':11925,'Laxus':11926,'Zeref':11927,'Acnologia':11928,'Jellal':11930,
+  'Ichigo':2,'Rukia':3,'Aizen':4,'Byakuya':5,'Zaraki':6,'Urahara':10,'Yoruichi':11,'Yhwach':12,'Grimmjow':13,'Ulquiorra':14,'Toshiro':15,
+  'Saitama':137663,'Genos':137664,'Garou':137665,'Bang':137666,'Tornado':137667,'King':137669,'Boros':137671,'Fubuki':137673,
+  'Asta':148448,'Yuno':148449,'Yami':148450,'Noelle':148451,'Julius':148452,'Zenon':148456,'Licht':148459,
+  'Shinra':170149,'Arthur':170150,'Tamaki':170151,'Benimaru':170157,'Burns':170154,'Joker':170155,
+  'Itadori':177947,'Megumi':177948,'Gojo':177949,'Sukuna':177950,'Nobara':177951,'Nanami':177952,'Yuta':177953,'Mahito':177954,'Todo':177959,
+  'Deku':57337,'Bakugo':57338,'Todoroki':57339,'All Might':57340,'Uraraka':57341,'Shigaraki':57342,'Hawks':57344,'Endeavor':57345,'Dabi':57350,'Toga':57349,
+  'Sung Jinwoo':254571,'Igris':254572,'Cha Hae-In':254573,'Beru':254574,'Ashborn':254576,
+  'Isagi':192900,'Rin':192901,'Bachira':192902,'Nagi':192905,'Kaiser':192906,'Shidou':192908,'Sae':192909,
+  'Kuroko':54231,'Kagami':54232,'Aomine':54233,'Kise':54234,'Midorima':54235,'Akashi':54237,
+  'Subaru':118399,'Emilia':118400,'Rem':118401,'Ram':118402,'Beatrice':118403,'Echidna':118406,
+  'Senku':179073,'Tsukasa':179074,'Chrome':179075,'Kohaku':179076,'Gen':179077,
+  'Ryo Saeba':1263,'Kaori':1264,'Umibozu':1265,
+};
+
+const imgCache = {};
+async function loadImg(name) {
+  if(imgCache[name]) return imgCache[name];
+  if(POKEMON_IMGS[name]){imgCache[name]=POKEMON_IMGS[name];return POKEMON_IMGS[name];}
+  const id=CHAR_MAL_IDS[name];
+  if(id){
+    try{
+      const r=await fetch(`https://api.jikan.moe/v4/characters/${id}`);
+      if(r.ok){const d=await r.json();const url=d.data?.images?.jpg?.image_url;if(url){imgCache[name]=url;return url;}}
+    }catch(e){}
+  }
+  return null;
+}
+
+async function showCharImg(containerId, name) {
+  const el=document.getElementById(containerId);
+  if(!el) return;
+  el.innerHTML='<div style="font-size:32px;color:var(--muted);">⏳</div>';
+  const url=await loadImg(name);
+  if(url) el.innerHTML=`<img src="${url}" style="max-height:160px;max-width:100%;object-fit:contain;border-radius:12px;" onerror="this.outerHTML='<div style=\\'font-size:48px\\'>🎭</div>'">`;
+  else el.innerHTML='<div style="font-size:48px;">🎭</div>';
+}
+
+let myName='',myRoom='',isHost=false,selectedUnis=[...UNIVERSES],qrGenerated=false;
+let hasAnswered=false, currentMaxHints=10;
+
+const AV=['av-purple','av-teal','av-coral','av-blue','av-amber'];
+function avatar(n,i){return`<div class="avatar ${AV[i%5]}">${n.slice(0,2).toUpperCase()}</div>`;}
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById('screen-'+id).classList.add('active');}
+function setError(id,msg){const el=document.getElementById(id);if(el){el.textContent=msg;setTimeout(()=>el.textContent='',3000);}}
+
+// Univers filter
+function initUniFilter(){
+  document.getElementById('uni-filter').innerHTML=UNIVERSES.map(u=>`<div class="uni-pill active" id="up-${u.replace(/[^a-z]/gi,'')}" onclick="toggleUni('${u}')">${u}</div>`).join('');
+}
+function toggleUni(u){
+  if(selectedUnis.includes(u)){if(selectedUnis.length<=1)return;selectedUnis=selectedUnis.filter(x=>x!==u);}
+  else selectedUnis.push(u);
+  document.getElementById('up-'+u.replace(/[^a-z]/gi,'')).classList.toggle('active',selectedUnis.includes(u));
+}
+
+// Share
+function setupShare(code){
+  const link=`${window.location.origin}/detective-multi.html?code=${code}`;
+  document.getElementById('share-link').textContent=link;
+  if(!qrGenerated){document.getElementById('qrcode').innerHTML='';new QRCode(document.getElementById('qrcode'),{text:link,width:130,height:130,colorDark:'#534AB7',colorLight:'#1a1828'});qrGenerated=true;}
+}
+function copyLink(){navigator.clipboard.writeText(document.getElementById('share-link').textContent).then(()=>{const b=document.getElementById('copy-btn');b.textContent='✓ Copié!';b.style.background='#1D9E75';setTimeout(()=>{b.textContent='📋 Copier';b.style.background='';},2000);});}
+
+function createRoom(){
+  myName=document.getElementById('home-name').value.trim();
+  const rounds=parseInt(document.getElementById('home-rounds').value)||8;
+  if(!myName)return setError('home-error','Entre ton pseudo !');
+  socket.emit('dm_create',{playerName:myName,totalRounds:rounds,selectedUniverses:selectedUnis});
+}
+function joinRoom(){
+  myName=document.getElementById('home-name').value.trim();
+  const code=document.getElementById('home-code').value.trim().toUpperCase();
+  if(!myName)return setError('home-error','Entre ton pseudo !');
+  if(!code)return setError('home-error','Entre le code !');
+  socket.emit('dm_join',{code,playerName:myName});
+}
+function startGame(){socket.emit('dm_start');}
+function revealNextHint(){socket.emit('dm_reveal_hint');}
+function restartGame(){socket.emit('dm_restart');}
+
+function submitAnswer(){
+  if(hasAnswered)return;
+  const val=document.getElementById('answer-input').value.trim();
+  if(!val)return;
+  socket.emit('dm_answer',{answer:val});
+  document.getElementById('answer-input').disabled=true;
+  document.getElementById('answer-btn').disabled=true;
+  document.getElementById('my-answer-status').textContent='⏳ Réponse envoyée...';
+}
+
+function renderScores(players){
+  return [...players].sort((a,b)=>b.score-a.score).map((p,i)=>`
+    <div class="player-score-row" id="psr-${p.name.replace(/[^a-z]/gi,'_')}">
+      ${avatar(p.name,i)}
+      <span>${p.name}</span>
+      <span class="score-pts">${p.score} pts</span>
+    </div>`).join('');
+}
+
+function renderLobby(room){
+  document.getElementById('lobby-code').textContent=room.code;
+  document.getElementById('player-count').textContent=room.players.length;
+  document.getElementById('lobby-players').innerHTML=room.players.map((p,i)=>`
+    <div class="player-row">${avatar(p.name,i)}<span>${p.name}</span></div>`).join('');
+  document.getElementById('lobby-hint').textContent=room.players.length<2?`En attente... (${room.players.length}/2 minimum)`:isHost?'':'En attente de l\'hôte...';
+  document.getElementById('start-btn').style.display=(isHost&&room.players.length>=2)?'block':'none';
+}
+
+// Socket events
+socket.on('dm_created',({code})=>{myRoom=code;isHost=true;show('lobby');setupShare(code);});
+socket.on('dm_joined', ({code})=>{myRoom=code;isHost=false;show('lobby');});
+socket.on('dm_update', room=>{if(room.phase==='lobby')renderLobby(room);});
+
+socket.on('dm_round_start',({roundNum,totalRounds,maxHints,players})=>{
+  currentMaxHints=maxHints;
+  hasAnswered=false;
+  document.getElementById('game-round-label').textContent=`Manche ${roundNum}/${totalRounds}`;
+  document.getElementById('hints-container').innerHTML='';
+  document.getElementById('round-winner-area').innerHTML='';
+  document.getElementById('answer-input').value='';
+  document.getElementById('answer-input').disabled=false;
+  document.getElementById('answer-btn').disabled=false;
+  document.getElementById('my-answer-status').textContent='';
+  document.getElementById('hint-progress-fill').style.width='0%';
+  document.getElementById('scores-list').innerHTML=renderScores(players);
+  document.getElementById('hint-btn-area').style.display=isHost?'block':'none';
+  document.getElementById('hints-left').textContent=maxHints;
+  show('game');
+});
+
+socket.on('dm_hint',({hintNum,hint,maxHints,pts})=>{
+  const ptsClass=pts>=5?'pts-5':pts===4?'pts-4':pts===3?'pts-3':pts===2?'pts-2':'pts-1';
+  const c=document.getElementById('hints-container');
+  const d=document.createElement('div');d.className='hint-card';
+  d.innerHTML=`<div class="hint-row"><span class="hint-number">${hintNum}</span><span style="font-size:15px;color:var(--text);flex:1;">${hint}</span><span class="pts-badge ${ptsClass}">+${pts}</span></div>`;
+  c.appendChild(d);c.scrollTop=c.scrollHeight;
+  const pct=(hintNum/maxHints)*100;
+  document.getElementById('hint-progress-fill').style.width=pct+'%';
+  document.getElementById('hints-left').textContent=maxHints-hintNum;
+  if(hintNum>=maxHints)document.getElementById('hint-btn-area').style.display='none';
+});
+
+socket.on('dm_answer_result',({playerName,correct,pts,answer,scores})=>{
+  if(playerName===myName){
+    if(correct){
+      document.getElementById('my-answer-status').textContent=`✓ Bonne réponse ! +${pts} pts`;
+      document.getElementById('my-answer-status').style.color='#5DCAA5';
+    }else{
+      document.getElementById('my-answer-status').textContent=`✗ "${answer}" — mauvaise réponse`;
+      document.getElementById('my-answer-status').style.color='#E24B4A';
+      hasAnswered=false;
+      setTimeout(()=>{
+        document.getElementById('answer-input').disabled=false;
+        document.getElementById('answer-btn').disabled=false;
+        document.getElementById('answer-input').value='';
+        document.getElementById('my-answer-status').textContent='Réessaie !';
+        document.getElementById('my-answer-status').style.color='var(--muted)';
+      },1500);
+    }
+  }
+  if(correct){
+    document.getElementById('scores-list').innerHTML=renderScores(scores);
+  }
+});
+
+socket.on('dm_round_end',async({answer,uni,winnerName,scores,allAnswered})=>{
+  hasAnswered=true;
+  document.getElementById('answer-input').disabled=true;
+  document.getElementById('answer-btn').disabled=true;
+  document.getElementById('hint-btn-area').style.display='none';
+
+  const area=document.getElementById('round-winner-area');
+  if(winnerName){
+    area.innerHTML=`<div class="round-winner-banner banner-correct">🎉 ${winnerName} a trouvé en premier !</div>`;
+  }else{
+    area.innerHTML=`<div class="round-winner-banner banner-reveal">Personne n'a trouvé — C'était <strong>${answer}</strong> (${uni})</div>`;
+  }
+
+  // Afficher l'image du perso
+  area.innerHTML+=`<div class="char-img-reveal" id="reveal-img-container"></div>
+    <div style="text-align:center;font-size:18px;font-weight:700;color:var(--text);">${answer}</div>
+    <div style="text-align:center;font-size:13px;color:var(--muted);">${uni}</div>`;
+  await showCharImg('reveal-img-container', answer);
+  document.getElementById('scores-list').innerHTML=renderScores(scores);
+});
+
+socket.on('dm_game_end',({scores})=>{
+  const sorted=[...scores].sort((a,b)=>b.score-a.score);
+  document.getElementById('final-scores').innerHTML=sorted.map((p,i)=>`
+    <div class="player-score-row">
+      <span style="font-size:20px;">${i===0?'🥇':i===1?'🥈':'🥉'}</span>
+      ${avatar(p.name,i)}
+      <span style="font-weight:${i===0?'700':'400'}">${p.name}</span>
+      <span class="score-pts">${p.score} pts</span>
+    </div>`).join('');
+  document.getElementById('restart-btn').style.display=isHost?'block':'none';
+  document.getElementById('result-wait').style.display=isHost?'none':'block';
+  show('result');
+});
+
+socket.on('error',({msg})=>setError('home-error',msg));
+
+window.addEventListener('load',()=>{
+  initUniFilter();
+  const p=new URLSearchParams(window.location.search);
+  const c=p.get('code');
+  if(c){document.getElementById('home-code').value=c.toUpperCase();}
+});
+</script>
+</body>
+</html>
