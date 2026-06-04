@@ -159,6 +159,24 @@
   <div id="result-wait" class="note" style="text-align:center;display:none;">En attente de l'hôte...</div>
 </div>
 
+<div id="screen-bonus" class="screen">
+  <div class="top-bar">
+    <div class="section-label">Devinette bonus</div>
+    <button class="btn-quit" onclick="skipBonus()">Passer</button>
+  </div>
+  <div id="bonus-hint" class="note" style="text-align:center;font-size:15px;margin:1rem 0;"></div>
+  <div class="card">
+    <div class="card-label" id="bonus-label">Tape le nom du personnage</div>
+    <input id="bonus-input" class="input" placeholder="Nom du personnage..." maxlength="30"/>
+    <button class="btn-primary btn-glow" style="margin-top:10px;" onclick="submitBonus()">Valider +1 pt</button>
+  </div>
+  <div id="bonus-results" class="card" style="margin-top:1rem;display:none;">
+    <div class="card-label">Résultats bonus</div>
+    <div id="bonus-results-list"></div>
+    <div id="bonus-scores" style="margin-top:10px;"></div>
+  </div>
+</div>
+
 <script src="/socket.io/socket.io.js"></script>
 <script src="game.js"></script>
 </body>

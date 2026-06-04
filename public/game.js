@@ -312,3 +312,53 @@ socket.on('game_result',({spyCaught,spyName,accusedName,allyChar,spyChar,votes,s
 
 socket.on('player_left',({name})=>console.log(name+' a quitté.'));
 socket.on('error',({msg})=>{setError('home-error',msg);setError('lobby-error',msg);});
+
+// --- Bonus phase ---
+let myBonusDone = false;
+
+socket.on('bonus_phase', ({ isSpy, hint, targetChar }) => {
+  myBonusDone = false;
+  document.getElementById('bonus-hint').textContent = hint;
+  document.getElementById('bonus-label').textContent = isSpy
+    ? 'Quel était le personnage des alliés ?'
+    : "Quel était le personnage de l'espion ?";
+  document.getElementById('bonus-input').value = '';
+  document.getElementById('bonus-results').style.display = 'none';
+  document.getElementById('bonus-results-list').innerHTML = '';
+  show('bonus');
+});
+
+function submitBonus() {
+  if (myBonusDone) return;
+  const guess = document.getElementById('bonus-input').value.trim();
+  if (!guess) return;
+  myBonusDone = true;
+  socket.emit('submit_bonus', { guess });
+  document.getElementById('bonus-input').disabled = true;
+  document.querySelector('#screen-bonus .btn-primary').disabled = true;
+}
+
+function skipBonus() {
+  if (myBonusDone) return;
+  myBonusDone = true;
+  socket.emit('skip_bonus');
+}
+
+socket.on('bonus_result', ({ playerName, guess, correct, target, scores, allDone }) => {
+  const list = document.getElementById('bonus-results-list');
+  document.getElementById('bonus-results').style.display = 'block';
+  if (guess !== null) {
+    const div = document.createElement('div');
+    div.className = 'vote-result-row';
+    div.innerHTML = correct
+      ? `<strong style="color:#5DCAA5;">${playerName}</strong> → "${guess}" ✓ +1 pt !`
+      : `<strong>${playerName}</strong> → "${guess}" ✗`;
+    list.appendChild(div);
+  } else {
+    const div = document.createElement('div');
+    div.className = 'vote-result-row';
+    div.innerHTML = `<strong style="color:var(--muted);">${playerName}</strong> a passé`;
+    list.appendChild(div);
+  }
+  document.getElementById('bonus-scores').innerHTML = renderScores(scores);
+});
