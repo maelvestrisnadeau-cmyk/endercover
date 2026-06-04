@@ -640,6 +640,15 @@ const UNIVERSES = ['Naruto','Dragon Ball','One Piece','Pokémon','Attack on Tita
 
 const rooms = {};
 
+const guessRooms = {};
+
+function generateGuessCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return 'G' + code;
+}
+
 function generateCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code = '';
@@ -947,13 +956,6 @@ io.on('connection', (socket) => {
   });
 });
 
-const guessRooms = {};
-function generateGuessCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let code = '';
-  for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
-  return 'G' + code;
-}
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Endercover lancé sur http://localhost:${PORT}`));
