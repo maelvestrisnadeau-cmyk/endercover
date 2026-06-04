@@ -858,3 +858,174 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Endercover lancé sur http://localhost:${PORT}`));
+
+// ===================== MODE QUI EST-CE =====================
+const guessRooms = {};
+
+function generateGuessCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 4; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  return 'G' + code;
+}
+
+const ALL_CHARS = [...new Set([
+  'Itachi','Sasuke','Naruto','Kakashi','Obito','Minato','Jiraiya','Tsunade','Gaara','Rock Lee','Pain','Madara','Orochimaru','Neji','Shikamaru','Hinata','Sakura','Hashirama','Tobirama','Kisame',
+  'Goku','Vegeta','Gohan','Freezer','Cell','Broly','Piccolo','Boo','Trunks','Goten','Krilin','Bardock','Whis','Beerus','Hit','Jiren','Goku Black','Zamasu','Cooler','Android 17','Android 18',
+  'Luffy','Zoro','Sanji','Nami','Robin','Shanks','Ace','Barbe Blanche','Trafalgar Law','Kaido','Boa Hancock','Usopp','Chopper','Brook','Franky','Jinbe','Yamato','Crocodile','Doflamingo','Katakuri','Rayleigh','Mihawk','Sabo','Marco','Garp','Akainu','Aokiji','Big Mom','Blackbeard',
+  'Pikachu','Raichu','Dracaufeu','Salamèche','Mewtwo','Mew','Dracolosse','Evoli','Darkrai','Lucario','Lokhlass','Reshiram','Zekrom','Kyogre','Groudon','Arceus','Gengar','Dialga','Giratina','Ho-Oh','Lugia',
+  'Eren','Levi','Mikasa','Armin','Hange','Erwin','Reiner','Annie','Zeke','Historia','Connie','Sasha','Jean','Gabi','Falco','Ymir','Kenny','Grisha',
+  'Tanjiro','Nezuko','Zenitsu','Inosuke','Rengoku','Tengen','Muzan','Akaza','Shinobu','Kanao','Genya','Mitsuri','Obanai','Muichiro','Gyomei','Sanemi','Douma','Kokushibo','Yoriichi',
+  'Natsu','Lucy','Erza','Gray','Makarov','Gildarts','Laxus','Zeref','Acnologia','Wendy','Jellal','Mirajane','Mystogan','Elfman','Cana','Gajeel','Levy','Ultear','Kagura','Sting','Rogue',
+  'Ichigo','Rukia','Aizen','Byakuya','Zaraki','Renji','Orihime','Uryu','Urahara','Yoruichi','Yhwach','Grimmjow','Ulquiorra','Toshiro','Shunsui','Gin','Nelliel','Starrk',
+  'Saitama','Genos','Garou','Bang','Tornado','Metal Bat','King','Flashy Flash','Boros','Zombieman','Fubuki','Mumen Rider','Darkshine','Speed-o-Sound Sonic','Atomic Samurai',
+  'Asta','Yuno','Yami','Noelle','Julius','Luck','Magna','Mereoleona','Zagred','Zenon','Finral','Secre','Vanessa','Dante','Vanica','Licht','Liebe','Lucius',
+  'Shinra','Arthur','Tamaki','Obi','Maki','Burns','Joker','Sho','Benimaru','Viktor','Nataku','Inca','Kurono','Konro','Vulcan','Giovanni',
+  'Itadori','Megumi','Gojo','Sukuna','Nobara','Nanami','Yuta','Mahito','Hakari','Choso','Toge','Panda','Maki JJK','Todo','Geto','Jogo','Hanami','Kenjaku',
+  'Deku','Bakugo','Todoroki','All Might','Uraraka','Shigaraki','All For One','Hawks','Endeavor','Iida','Tsuyu','Denki','Eijiro','Momo','Twice','Toga','Dabi','Overhaul','Mirko','Eraser Head',
+  'Sung Jinwoo','Igris','Cha Hae-In','Beru','Thomas Andre','Ashborn','Antares','Go Gunhee','Kaisel','Bellion',
+  'Isagi','Rin','Bachira','Chigiri','Reo','Nagi','Kaiser','Barou','Shidou','Yukimiya','Sae','Karasu','Ego',
+  'Kuroko','Kagami','Aomine','Kise','Midorima','Murasakibara','Akashi','Hyuga','Momoi','Kiyoshi','Himuro',
+  'Subaru','Emilia','Rem','Ram','Beatrice','Roswaal','Reinhard','Echidna','Puck','Otto','Garfiel','Regulus',
+  'Senku','Tsukasa','Chrome','Kohaku','Gen','Ryusui','Suika','Taiju','Ukyo','Hyoga',
+  'Ryo Saeba','Kaori','Umibozu',
+])];
+
+io.on('connection_guess', () => {});
+
+// Écouter les events guess sur la même connexion io
+const origOn = io.on.bind(io);
+io.on('connection', (socket) => {
+  // Créer salle Qui est-ce
+  socket.on('guess_create', ({ playerName, selectedUniverses }) => {
+    let code;
+    do { code = generateGuessCode(); } while (guessRooms[code]);
+    guessRooms[code] = {
+      code, host: socket.id,
+      players: [{ id: socket.id, name: playerName, char: null, ready: false, questions: 0 }],
+      phase: 'lobby',
+      selectedUniverses: selectedUniverses || [],
+      winner: null,
+    };
+    socket.join(code);
+    socket.data.guessRoom = code;
+    socket.data.name = playerName;
+    socket.emit('guess_created', { code });
+    io.to(code).emit('guess_update', guessRooms[code]);
+  });
+
+  socket.on('guess_join', ({ code, playerName }) => {
+    const room = guessRooms[code];
+    if (!room) return socket.emit('error', { msg: 'Salle introuvable.' });
+    if (room.players.length >= 2) return socket.emit('error', { msg: 'Salle pleine (2 joueurs max).' });
+    room.players.push({ id: socket.id, name: playerName, char: null, ready: false, questions: 0 });
+    socket.join(code);
+    socket.data.guessRoom = code;
+    socket.data.name = playerName;
+    socket.emit('guess_joined', { code });
+    io.to(code).emit('guess_update', room);
+  });
+
+  socket.on('guess_set_char', ({ charName }) => {
+    const code = socket.data.guessRoom;
+    const room = guessRooms[code];
+    if (!room) return;
+    const player = room.players.find(p => p.id === socket.id);
+    if (!player) return;
+    player.char = charName;
+    player.ready = true;
+    io.to(code).emit('guess_update', room);
+    if (room.players.length === 2 && room.players.every(p => p.ready)) {
+      room.phase = 'playing';
+      room.currentTurn = room.players[0].id;
+      room.players.forEach(p => {
+        const opponent = room.players.find(o => o.id !== p.id);
+        io.to(p.id).emit('guess_start', {
+          myChar: p.char,
+          opponentName: opponent.name,
+          currentTurn: room.currentTurn,
+        });
+      });
+    }
+  });
+
+  socket.on('guess_random_char', ({ universe }) => {
+    const code = socket.data.guessRoom;
+    const room = guessRooms[code];
+    if (!room) return;
+    const pool = universe
+      ? ALL_CHARS.filter(c => {
+          // On pourrait filtrer par univers si on avait le mapping, simplifié ici
+          return true;
+        })
+      : ALL_CHARS;
+    const charName = pool[Math.floor(Math.random() * pool.length)];
+    socket.emit('guess_random_result', { charName });
+  });
+
+  socket.on('guess_question', ({ question }) => {
+    const code = socket.data.guessRoom;
+    const room = guessRooms[code];
+    if (!room || room.phase !== 'playing') return;
+    if (room.currentTurn !== socket.id) return;
+    const player = room.players.find(p => p.id === socket.id);
+    player.questions++;
+    io.to(code).emit('guess_question_sent', {
+      from: socket.data.name,
+      question,
+      questionCount: player.questions,
+    });
+  });
+
+  socket.on('guess_answer', ({ answer }) => {
+    const code = socket.data.guessRoom;
+    const room = guessRooms[code];
+    if (!room || room.phase !== 'playing') return;
+    const asker = room.players.find(p => p.id === room.currentTurn);
+    io.to(code).emit('guess_answer_sent', {
+      from: socket.data.name,
+      answer,
+    });
+    // Après réponse, c'est au tour de l'autre de poser une question OU de deviner
+    room.currentTurn = room.players.find(p => p.id !== room.currentTurn).id;
+    io.to(code).emit('guess_turn', { currentTurn: room.currentTurn });
+  });
+
+  socket.on('guess_final', ({ guess }) => {
+    const code = socket.data.guessRoom;
+    const room = guessRooms[code];
+    if (!room || room.phase !== 'playing') return;
+    const guesser = room.players.find(p => p.id === socket.id);
+    const opponent = room.players.find(p => p.id !== socket.id);
+    const correct = guess.trim().toLowerCase() === opponent.char.toLowerCase();
+    if (correct) {
+      room.phase = 'finished';
+      room.winner = guesser.name;
+      io.to(code).emit('guess_finished', {
+        winner: guesser.name,
+        loser: opponent.name,
+        winnerChar: opponent.char,
+        loserChar: guesser.char,
+        questions: guesser.questions,
+      });
+    } else {
+      io.to(code).emit('guess_wrong', {
+        from: guesser.name,
+        guess,
+      });
+      // Mauvaise réponse = perd son tour
+      room.currentTurn = opponent.id;
+      io.to(code).emit('guess_turn', { currentTurn: room.currentTurn });
+    }
+  });
+
+  socket.on('guess_restart', () => {
+    const code = socket.data.guessRoom;
+    const room = guessRooms[code];
+    if (!room || room.host !== socket.id) return;
+    room.phase = 'lobby';
+    room.winner = null;
+    room.players.forEach(p => { p.char = null; p.ready = false; p.questions = 0; });
+    io.to(code).emit('guess_update', room);
+  });
+});

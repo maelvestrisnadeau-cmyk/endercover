@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Qui est-ce ? — Endercover</title>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    .char-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;max-height:300px;overflow-y:auto;margin:10px 0;}
+    .char-option{padding:8px;background:var(--card);border:1px solid var(--border);border-radius:10px;cursor:pointer;font-size:13px;text-align:center;transition:all 0.15s;}
+    .char-option:hover{background:rgba(83,74,183,0.2);border-color:var(--purple-light);}
+    .char-option.selected{border:2px solid var(--purple-light);background:rgba(83,74,183,0.3);color:#CECBF6;}
+    .chat-bubble{padding:8px 12px;border-radius:12px;font-size:14px;margin:4px 0;max-width:85%;}
+    .bubble-question{background:rgba(83,74,183,0.2);border:1px solid rgba(83,74,183,0.3);align-self:flex-start;}
+    .bubble-answer-oui{background:rgba(29,158,117,0.2);border:1px solid rgba(29,158,117,0.3);align-self:flex-end;}
+    .bubble-answer-non{background:rgba(226,75,74,0.2);border:1px solid rgba(226,75,74,0.3);align-self:flex-end;}
+    .bubble-system{background:var(--bg2);color:var(--muted);font-size:12px;text-align:center;align-self:center;border-radius:20px;padding:4px 12px;}
+    .chat-history{display:flex;flex-direction:column;gap:4px;max-height:250px;overflow-y:auto;padding:8px 0;}
+    .answer-btns{display:flex;gap:8px;}
+    .btn-oui{flex:1;padding:12px;background:rgba(29,158,117,0.15);color:#5DCAA5;border:1px solid rgba(29,158,117,0.3);border-radius:12px;cursor:pointer;font-size:15px;font-weight:600;}
+    .btn-non{flex:1;padding:12px;background:rgba(226,75,74,0.15);color:#E24B4A;border:1px solid rgba(226,75,74,0.3);border-radius:12px;cursor:pointer;font-size:15px;font-weight:600;}
+    .btn-oui:hover{background:rgba(29,158,117,0.3);}
+    .btn-non:hover{background:rgba(226,75,74,0.3);}
+    .turn-indicator{text-align:center;padding:10px;border-radius:12px;font-size:14px;font-weight:600;}
+    .turn-mine{background:rgba(83,74,183,0.15);color:var(--purple-light);}
+    .turn-other{background:var(--bg2);color:var(--muted);}
+    .my-char-display{text-align:center;padding:16px;background:rgba(83,74,183,0.1);border:1px solid rgba(83,74,183,0.2);border-radius:16px;font-size:18px;font-weight:600;color:var(--purple-light);}
+    .char-search{width:100%;padding:8px 12px;font-size:14px;background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--text);margin-bottom:8px;outline:none;}
+    .char-search::placeholder{color:var(--muted);}
+  </style>
+</head>
+<body>
+
+<div id="screen-home" class="screen active">
+  <div class="logo" style="margin-top:2rem;">Qui est-ce ?</div>
+  <div class="tagline">Devine le personnage de ton adversaire !</div>
+  <input id="home-name" class="input" placeholder="Ton pseudo" maxlength="16"/>
+  <button class="btn-primary btn-glow" onclick="createGuessRoom()">Créer une partie</button>
+  <div class="divider">ou</div>
+  <input id="home-code" class="input" placeholder="Code de la salle (ex: GABCD)" maxlength="5" style="text-transform:uppercase"/>
+  <button class="btn-secondary" onclick="joinGuessRoom()">Rejoindre</button>
+  <div class="divider">ou</div>
+  <a href="/" class="btn-secondary" style="display:block;text-align:center;text-decoration:none;padding:12px;">← Retour à Endercover</a>
+  <div id="home-error" class="error-msg"></div>
+</div>
+
+<div id="screen-lobby" class="screen">
+  <div class="top-bar">
+    <div>
+      <div class="section-label">Code de la salle</div>
+      <div id="lobby-code" class="room-code"></div>
+    </div>
+    <button class="btn-quit" onclick="location.reload()">✕</button>
+  </div>
+  <div id="lobby-players" class="player-list"></div>
+  <div id="lobby-hint" class="note" style="text-align:center;"></div>
+</div>
+
+<div id="screen-choose" class="screen">
+  <div class="top-bar">
+    <div class="section-label">Choisis ton personnage secret</div>
+    <button class="btn-quit" onclick="location.reload()">✕</button>
+  </div>
+  <div class="note" style="margin-bottom:10px;">Ton adversaire devra deviner ce personnage !</div>
+  <input class="char-search" id="char-search" placeholder="Rechercher un personnage..." oninput="filterChars()"/>
+  <div class="char-grid" id="char-grid"></div>
+  <div id="selected-char-display" style="display:none;" class="my-char-display">✓ <span id="selected-char-name"></span></div>
+  <button class="btn-primary btn-glow" id="confirm-char-btn" onclick="confirmChar()" style="display:none;">Confirmer ce personnage</button>
+  <button class="btn-secondary" onclick="pickRandom()" style="margin-top:8px;">🎲 Choisir au hasard</button>
+  <div class="note" id="choose-wait" style="text-align:center;display:none;">En attente que ton adversaire choisisse...</div>
+</div>
+
+<div id="screen-game" class="screen">
+  <div class="top-bar">
+    <div id="turn-indicator" class="turn-indicator turn-other">En attente...</div>
+    <button class="btn-quit" onclick="location.reload()">✕</button>
+  </div>
+  <div id="my-char-banner" class="my-char-display" style="margin-bottom:12px;font-size:14px;"></div>
+  <div class="card">
+    <div class="card-label">Questions & Réponses</div>
+    <div id="chat-history" class="chat-history"></div>
+  </div>
+  <div id="question-area" class="card" style="display:none;margin-top:8px;">
+    <div class="card-label">Pose une question (oui/non)</div>
+    <input id="question-input" class="input" placeholder="Ex: Est-ce un personnage masculin ?" maxlength="100"/>
+    <button class="btn-primary" onclick="sendQuestion()" style="margin-top:8px;">Envoyer la question</button>
+    <button class="btn-secondary" onclick="showFinalGuess()" style="margin-top:6px;">🎯 Je veux deviner !</button>
+  </div>
+  <div id="answer-area" class="card" style="display:none;margin-top:8px;">
+    <div class="card-label" id="question-to-answer"></div>
+    <div class="answer-btns">
+      <button class="btn-oui" onclick="sendAnswer('Oui ✓')">Oui ✓</button>
+      <button class="btn-non" onclick="sendAnswer('Non ✗')">Non ✗</button>
+    </div>
+  </div>
+  <div id="final-guess-area" class="card" style="display:none;margin-top:8px;">
+    <div class="card-label">Quel est le personnage de ton adversaire ?</div>
+    <input class="char-search" id="final-search" placeholder="Rechercher..." oninput="filterFinalChars()"/>
+    <div class="char-grid" id="final-char-grid"></div>
+    <button class="btn-primary btn-glow" id="final-confirm-btn" onclick="confirmFinalGuess()" style="display:none;margin-top:8px;">Confirmer ma réponse finale !</button>
+    <button class="btn-secondary" onclick="hideFinalGuess()" style="margin-top:6px;">← Retour aux questions</button>
+  </div>
+</div>
+
+<div id="screen-result" class="screen">
+  <div id="result-icon" class="result-icon"></div>
+  <div id="result-title" class="result-title"></div>
+  <div id="result-sub" class="result-sub"></div>
+  <div class="card" style="margin-top:1.5rem;">
+    <div class="card-label">Les personnages</div>
+    <div class="reveal-row">
+      <div style="font-size:28px;">🤝</div>
+      <div><div id="res-winner-char" class="char-name-sm"></div><div class="char-uni" id="res-winner-name"></div></div>
+    </div>
+    <div class="reveal-row">
+      <div style="font-size:28px;">🕵️</div>
+      <div><div id="res-loser-char" class="char-name-sm"></div><div class="char-uni" id="res-loser-name"></div></div>
+    </div>
+  </div>
+  <button id="restart-btn" class="btn-primary" style="display:none;margin-top:1rem;" onclick="restartGuess()">Rejouer</button>
+  <div id="result-wait" class="note" style="text-align:center;display:none;">En attente de l'hôte...</div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+let myName='', myRoom='', isHost=false, myChar=null, selectedCharName=null;
+let myTurn=false, pendingQuestion=null, finalSelectedChar=null;
+
+const ALL_CHARS = ['Itachi','Sasuke','Naruto','Kakashi','Obito','Minato','Jiraiya','Tsunade','Gaara','Rock Lee','Pain','Madara','Orochimaru','Neji','Shikamaru','Hinata','Sakura','Hashirama','Kisame','Deidara','Goku','Vegeta','Gohan','Freezer','Cell','Broly','Piccolo','Boo','Trunks','Goten','Krilin','Bardock','Whis','Beerus','Hit','Jiren','Goku Black','Zamasu','Android 17','Android 18','Luffy','Zoro','Sanji','Nami','Robin','Shanks','Ace','Barbe Blanche','Trafalgar Law','Kaido','Boa Hancock','Usopp','Chopper','Brook','Franky','Jinbe','Yamato','Crocodile','Doflamingo','Katakuri','Mihawk','Sabo','Garp','Akainu','Big Mom','Blackbeard','Pikachu','Raichu','Dracaufeu','Salamèche','Mewtwo','Mew','Dracolosse','Evoli','Darkrai','Lucario','Lokhlass','Reshiram','Zekrom','Kyogre','Groudon','Arceus','Gengar','Dialga','Ho-Oh','Lugia','Eren','Levi','Mikasa','Armin','Hange','Erwin','Reiner','Annie','Zeke','Historia','Connie','Sasha','Jean','Kenny','Tanjiro','Nezuko','Zenitsu','Inosuke','Rengoku','Tengen','Muzan','Akaza','Shinobu','Kanao','Genya','Mitsuri','Muichiro','Gyomei','Sanemi','Douma','Kokushibo','Yoriichi','Natsu','Lucy','Erza','Gray','Makarov','Gildarts','Laxus','Zeref','Acnologia','Wendy','Jellal','Mirajane','Gajeel','Sting','Rogue','Ichigo','Rukia','Aizen','Byakuya','Zaraki','Renji','Orihime','Uryu','Urahara','Yoruichi','Yhwach','Grimmjow','Ulquiorra','Toshiro','Shunsui','Gin','Nelliel','Saitama','Genos','Garou','Bang','Tornado','Metal Bat','King','Flashy Flash','Boros','Fubuki','Mumen Rider','Darkshine','Asta','Yuno','Yami','Noelle','Julius','Luck','Magna','Mereoleona','Zenon','Vanessa','Dante','Licht','Liebe','Shinra','Arthur','Tamaki','Obi','Maki','Burns','Joker','Sho','Benimaru','Viktor','Inca','Vulcan','Itadori','Megumi','Gojo','Sukuna','Nobara','Nanami','Yuta','Mahito','Hakari','Choso','Toge','Panda','Todo','Geto','Jogo','Kenjaku','Deku','Bakugo','Todoroki','All Might','Uraraka','Shigaraki','All For One','Hawks','Endeavor','Iida','Tsuyu','Eijiro','Momo','Twice','Toga','Dabi','Overhaul','Mirko','Eraser Head','Sung Jinwoo','Igris','Cha Hae-In','Beru','Thomas Andre','Ashborn','Antares','Isagi','Rin','Bachira','Chigiri','Reo','Nagi','Kaiser','Barou','Shidou','Sae','Karasu','Kuroko','Kagami','Aomine','Kise','Midorima','Murasakibara','Akashi','Hyuga','Momoi','Kiyoshi','Himuro','Subaru','Emilia','Rem','Ram','Beatrice','Roswaal','Reinhard','Echidna','Otto','Garfiel','Regulus','Senku','Tsukasa','Chrome','Kohaku','Gen','Ryusui','Suika','Taiju','Ukyo','Ryo Saeba','Kaori','Umibozu'];
+
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById('screen-'+id).classList.add('active');}
+function setError(id,msg){const el=document.getElementById(id);if(el){el.textContent=msg;setTimeout(()=>el.textContent='',3000);}}
+
+function createGuessRoom(){
+  myName=document.getElementById('home-name').value.trim();
+  if(!myName)return setError('home-error','Entre ton pseudo !');
+  socket.emit('guess_create',{playerName:myName});
+}
+function joinGuessRoom(){
+  myName=document.getElementById('home-name').value.trim();
+  const code=document.getElementById('home-code').value.trim().toUpperCase();
+  if(!myName)return setError('home-error','Entre ton pseudo !');
+  if(!code)return setError('home-error','Entre le code de la salle !');
+  socket.emit('guess_join',{code,playerName:myName});
+}
+
+function renderCharGrid(containerId, chars, onSelect){
+  const grid=document.getElementById(containerId);
+  grid.innerHTML=chars.map(c=>`<div class="char-option" onclick="${onSelect}('${c}')">${c}</div>`).join('');
+}
+
+function filterChars(){
+  const q=document.getElementById('char-search').value.toLowerCase();
+  const filtered=ALL_CHARS.filter(c=>c.toLowerCase().includes(q));
+  renderCharGrid('char-grid',filtered,'selectChar');
+}
+
+function filterFinalChars(){
+  const q=document.getElementById('final-search').value.toLowerCase();
+  const filtered=ALL_CHARS.filter(c=>c.toLowerCase().includes(q));
+  const grid=document.getElementById('final-char-grid');
+  grid.innerHTML=filtered.map(c=>`<div class="char-option" onclick="selectFinalChar('${c}')">${c}</div>`).join('');
+}
+
+function selectChar(name){
+  selectedCharName=name;
+  document.querySelectorAll('.char-option').forEach(el=>el.classList.remove('selected'));
+  document.querySelectorAll('.char-option').forEach(el=>{if(el.textContent===name)el.classList.add('selected');});
+  document.getElementById('selected-char-display').style.display='block';
+  document.getElementById('selected-char-name').textContent=name;
+  document.getElementById('confirm-char-btn').style.display='block';
+}
+
+function pickRandom(){
+  const name=ALL_CHARS[Math.floor(Math.random()*ALL_CHARS.length)];
+  selectChar(name);
+  document.getElementById('char-search').value='';
+  filterChars();
+}
+
+function confirmChar(){
+  if(!selectedCharName)return;
+  myChar=selectedCharName;
+  socket.emit('guess_set_char',{charName:selectedCharName});
+  document.getElementById('confirm-char-btn').style.display='none';
+  document.getElementById('choose-wait').style.display='block';
+}
+
+function selectFinalChar(name){
+  finalSelectedChar=name;
+  document.querySelectorAll('#final-char-grid .char-option').forEach(el=>el.classList.remove('selected'));
+  document.querySelectorAll('#final-char-grid .char-option').forEach(el=>{if(el.textContent===name)el.classList.add('selected');});
+  document.getElementById('final-confirm-btn').style.display='block';
+}
+
+function showFinalGuess(){
+  document.getElementById('question-area').style.display='none';
+  document.getElementById('final-guess-area').style.display='block';
+  filterFinalChars();
+}
+function hideFinalGuess(){
+  document.getElementById('final-guess-area').style.display='none';
+  document.getElementById('question-area').style.display=myTurn?'block':'none';
+}
+
+function confirmFinalGuess(){
+  if(!finalSelectedChar)return;
+  socket.emit('guess_final',{guess:finalSelectedChar});
+  document.getElementById('final-guess-area').style.display='none';
+}
+
+function sendQuestion(){
+  const q=document.getElementById('question-input').value.trim();
+  if(!q)return;
+  socket.emit('guess_question',{question:q});
+  document.getElementById('question-input').value='';
+  document.getElementById('question-area').style.display='none';
+}
+
+function sendAnswer(answer){
+  socket.emit('guess_answer',{answer});
+  document.getElementById('answer-area').style.display='none';
+}
+
+function addBubble(text,type){
+  const box=document.getElementById('chat-history');
+  const div=document.createElement('div');
+  div.className=`chat-bubble bubble-${type}`;
+  div.textContent=text;
+  box.appendChild(div);
+  box.scrollTop=box.scrollHeight;
+}
+
+function updateTurnUI(){
+  const ind=document.getElementById('turn-indicator');
+  const qa=document.getElementById('question-area');
+  const aa=document.getElementById('answer-area');
+  if(myTurn){
+    ind.textContent='🎯 C\'est ton tour — pose une question !';
+    ind.className='turn-indicator turn-mine';
+    if(document.getElementById('final-guess-area').style.display==='none') qa.style.display='block';
+    aa.style.display='none';
+  }else{
+    ind.textContent='⏳ En attente de la question adverse...';
+    ind.className='turn-indicator turn-other';
+    qa.style.display='none';
+  }
+}
+
+function restartGuess(){socket.emit('guess_restart');}
+
+// Socket events
+socket.on('guess_created',({code})=>{myRoom=code;isHost=true;show('lobby');document.getElementById('lobby-code').textContent=code;});
+socket.on('guess_joined',({code})=>{myRoom=code;isHost=false;show('lobby');document.getElementById('lobby-code').textContent=code;});
+
+socket.on('guess_update',(room)=>{
+  document.getElementById('lobby-players').innerHTML=room.players.map((p,i)=>`<div class="player-row"><div class="avatar ${['av-purple','av-teal'][i]}">${p.name.slice(0,2).toUpperCase()}</div><span>${p.name}</span>${p.ready?'<span class="ready-dot">✓</span>':''}</div>`).join('');
+  document.getElementById('lobby-hint').textContent=room.players.length<2?'En attente du 2ème joueur...':'Les deux joueurs sont là !';
+  if(room.phase==='lobby'&&room.players.length===2){show('choose');renderCharGrid('char-grid',ALL_CHARS,'selectChar');}
+  if(room.phase==='lobby'&&room.winner!==null){
+    show('lobby');
+    document.getElementById('lobby-players').innerHTML=room.players.map((p,i)=>`<div class="player-row"><div class="avatar ${['av-purple','av-teal'][i]}">${p.name.slice(0,2).toUpperCase()}</div><span>${p.name}</span></div>`).join('');
+  }
+});
+
+socket.on('guess_start',({myChar:char,opponentName,currentTurn})=>{
+  myChar=char;
+  document.getElementById('my-char-banner').textContent=`Ton personnage secret : ${char}`;
+  myTurn=(currentTurn===socket.id);
+  show('game');
+  updateTurnUI();
+  addBubble('La partie commence ! '+( myTurn?'Tu poses la première question.':opponentName+' commence.'), 'system');
+});
+
+socket.on('guess_question_sent',({from,question,questionCount})=>{
+  addBubble(`${from} : ${question}`,from===myName?'question':'question');
+  if(from!==myName){
+    pendingQuestion=question;
+    document.getElementById('question-to-answer').textContent=`❓ ${from} demande : "${question}"`;
+    document.getElementById('answer-area').style.display='block';
+    document.getElementById('question-area').style.display='none';
+  }
+  addBubble(`Question n°${questionCount}`,'system');
+});
+
+socket.on('guess_answer_sent',({from,answer})=>{
+  const type=answer.includes('Oui')?'answer-oui':'answer-non';
+  addBubble(`${from} répond : ${answer}`,type);
+});
+
+socket.on('guess_turn',({currentTurn})=>{
+  myTurn=(currentTurn===socket.id);
+  updateTurnUI();
+});
+
+socket.on('guess_wrong',({from,guess})=>{
+  addBubble(`❌ ${from} a proposé "${guess}" — c'est faux !`,'system');
+});
+
+socket.on('guess_finished',({winner,loser,winnerChar,loserChar,questions})=>{
+  show('result');
+  const iWon=winner===myName;
+  document.getElementById('result-icon').textContent=iWon?'🏆':'😅';
+  document.getElementById('result-title').textContent=iWon?'Tu as gagné !':'Tu as perdu !';
+  document.getElementById('result-sub').textContent=iWon?`Bravo ! Tu as trouvé en ${questions} questions !`:`${winner} a trouvé ton personnage !`;
+  document.getElementById('res-winner-char').textContent=winnerChar;
+  document.getElementById('res-winner-name').textContent='Personnage de '+loser;
+  document.getElementById('res-loser-char').textContent=loserChar;
+  document.getElementById('res-loser-name').textContent='Personnage de '+winner;
+  document.getElementById('restart-btn').style.display=isHost?'block':'none';
+  document.getElementById('result-wait').style.display=isHost?'none':'block';
+});
+
+socket.on('error',({msg})=>setError('home-error',msg));
+</script>
+</body>
+</html>
