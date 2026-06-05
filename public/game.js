@@ -1,12 +1,6 @@
 const socket = io();
 
-// IDs MAL des personnages - chargés dynamiquement via Jikan API dans le navigateur
-const CHAR_MAL_IDS = {}; // Images chargées via Jikan API si dispo
-
-// Cache des images déjà chargées
-const imgCache = {};
-
-// Pokemon via PokeAPI (100% fiable, pas besoin de Jikan)
+// Images Pokemon (fiables 100%)
 const POKEMON_IMGS = {
   'Pikachu':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png',
   'Raichu':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/26.png',
@@ -22,9 +16,8 @@ const POKEMON_IMGS = {
   'Dracovolt':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/880.png',
   'Riolu':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/447.png',
   'Sorcilège':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/282.png',
-  'Sacha':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png',
-  'Gary':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/26.png',
-  'Méga Rayquaza':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/384.png',
+  'Arceus':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/493.png',
+  'Gengar':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/94.png',
   'Reshiram':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/643.png',
   'Zekrom':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/644.png',
   'Kyogre':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/382.png',
@@ -33,93 +26,116 @@ const POKEMON_IMGS = {
   'Lugia':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/249.png',
   'Dialga':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/483.png',
   'Giratina':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/487.png',
-  'Arceus':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/493.png',
-  'Ditto':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/132.png',
-  'Gengar':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/94.png',
-  'Tyranocif':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/248.png',
-  'Léviator':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/130.png',
-  'Drattak':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/148.png',
+  'Togekiss':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/468.png',
   'Noctali':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/197.png',
   'Espeon':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/196.png',
-  'Umbreon':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/197.png',
   'Sulfura':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/146.png',
   'Artikodin':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/144.png',
-  'Togekiss':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/468.png',
-  'Mackogneur':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/68.png',
+  'Léviator':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/130.png',
+  'Drattak':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/148.png',
+  'Tyranocif':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/248.png',
   'Électhor':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/145.png',
+  'Mackogneur':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/68.png',
+  'Mélodie':'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/175.png',
 };
 
-// Fonction principale pour récupérer une image
+// Cache images
+const imgCache = {};
+
+// Charger image via Jikan API (pour les non-Pokemon)
 async function loadCharImage(name) {
   if (imgCache[name]) return imgCache[name];
-
-  // Pokemon : PokeAPI direct
-  if (POKEMON_IMGS[name]) {
-    imgCache[name] = POKEMON_IMGS[name];
-    return POKEMON_IMGS[name];
-  }
-
-  // Autres : Jikan API (chargé dans le navigateur, pas depuis le serveur)
-  const malId = CHAR_MAL_IDS[name];
-  if (malId) {
-    try {
-      const r = await fetch(`https://api.jikan.moe/v4/characters/${malId}`, {
-        headers: { 'Accept': 'application/json' }
-      });
-      if (r.ok) {
-        const d = await r.json();
-        const url = d.data?.images?.jpg?.image_url;
-        if (url) { imgCache[name] = url; return url; }
-      }
-    } catch(e) {}
-  }
-
+  if (POKEMON_IMGS[name]) { imgCache[name] = POKEMON_IMGS[name]; return POKEMON_IMGS[name]; }
   return null;
 }
 
 function getImg(name, large) {
   const h = large ? '200px' : '64px';
   const r = large ? '12px' : '8px';
-  const id = `img-${name.replace(/[^a-zA-Z0-9]/g,'_')}-${large?'lg':'sm'}`;
-
-  // Si déjà en cache, retourner directement
+  const id = 'img_' + name.replace(/[^a-zA-Z0-9]/g,'_') + (large?'_lg':'_sm');
   if (imgCache[name]) {
-    return `<img src="${imgCache[name]}" alt="${name}" style="max-height:${h};max-width:100%;object-fit:cover;border-radius:${r};" onerror="this.outerHTML='<div style=\\'font-size:${large?48:28}px;display:flex;align-items:center;justify-content:center;height:${h}\\'>🎭</div>'">`;
+    return `<img src="${imgCache[name]}" alt="${name}" style="max-height:${h};max-width:100%;object-fit:cover;border-radius:${r};" onerror="this.outerHTML='<div style=font-size:${large?48:28}px>🎭</div>'">`;
   }
-
-  // Sinon placeholder + chargement async
-  const placeholder = `<div id="${id}" style="height:${h};display:flex;align-items:center;justify-content:center;font-size:${large?'32px':'20px'};color:var(--muted);">⏳</div>`;
-
-  // Charger l'image en arrière-plan
   loadCharImage(name).then(url => {
     const el = document.getElementById(id);
-    if (el && url) {
-      el.outerHTML = `<img src="${url}" alt="${name}" style="max-height:${h};max-width:100%;object-fit:cover;border-radius:${r};" onerror="this.outerHTML='<div style=\\'font-size:${large?48:28}px;display:flex;align-items:center;justify-content:center;height:${h}\\'>🎭</div>'">`;
-    } else if (el) {
-      el.textContent = '🎭';
-      el.style.fontSize = large ? '48px' : '28px';
-    }
+    if (el && url) el.outerHTML = `<img src="${url}" alt="${name}" style="max-height:${h};max-width:100%;object-fit:cover;border-radius:${r};">`;
+    else if (el) { el.textContent = '🎭'; el.style.fontSize = large ? '48px' : '28px'; }
   });
-
-  return placeholder;
+  return `<div id="${id}" style="height:${h};display:flex;align-items:center;justify-content:center;font-size:20px;color:var(--muted);">⏳</div>`;
 }
 
-let myName='',myRoom='',isHost=false,selectedVote=null,allHints=[{},{}],qrGenerated=false;
+let myName='', myRoom='', isHost=false, selectedVote=null, allHints=[{},{}], qrGenerated=false;
 let selectedUniverses=[];
 const ALL_UNIVERSES=['Naruto','Dragon Ball','One Piece','Pokémon','Attack on Titan','Demon Slayer','Fairy Tail','Bleach','One Punch Man','Black Clover','Fire Force','Jujutsu Kaisen','My Hero Academia','Solo Leveling','Blue Lock','Kuroko no Basket','Re:Zero','Dr. Stone','City Hunter'];
 
-function initParticles(){const c=document.getElementById('particles');if(!c)return;for(let i=0;i<20;i++){const p=document.createElement('div');p.className='particle';const s=Math.random()*4+2;p.style.cssText=`width:${s}px;height:${s}px;left:${Math.random()*100}%;background:hsl(${220+Math.random()*60},70%,60%);animation-duration:${8+Math.random()*12}s;animation-delay:${Math.random()*8}s;`;c.appendChild(p);}}
+function initParticles(){
+  const c=document.getElementById('particles');
+  if(!c)return;
+  for(let i=0;i<20;i++){
+    const p=document.createElement('div');
+    p.className='particle';
+    const s=Math.random()*4+2;
+    p.style.cssText=`width:${s}px;height:${s}px;left:${Math.random()*100}%;background:hsl(${220+Math.random()*60},70%,60%);animation-duration:${8+Math.random()*12}s;animation-delay:${Math.random()*8}s;`;
+    c.appendChild(p);
+  }
+}
 
-function initFloatingChars(){const c=document.getElementById('floating-chars');if(!c)return;['Pikachu','Dracaufeu','Mewtwo','Goku','Luffy','Naruto','Gojo','Tanjiro','Deku','Isagi','Levi','Kuroko','Ichigo','Natsu','Saitama','Asta'].forEach(name=>{const el=document.createElement('div');el.className='float-char';el.style.cssText=`left:${5+Math.random()*90}%;top:${10+Math.random()*80}%;animation-duration:${6+Math.random()*8}s;animation-delay:${Math.random()*6}s;`;el.innerHTML=getImg(name,false);c.appendChild(el);});}
+function initFloatingChars(){
+  const c=document.getElementById('floating-chars');
+  if(!c)return;
+  ['Pikachu','Dracaufeu','Mewtwo','Goku','Luffy','Naruto','Gojo','Tanjiro','Deku','Isagi','Levi','Kuroko','Ichigo','Natsu','Saitama','Asta'].forEach(name=>{
+    const el=document.createElement('div');
+    el.className='float-char';
+    el.style.cssText=`left:${5+Math.random()*90}%;top:${10+Math.random()*80}%;animation-duration:${6+Math.random()*8}s;animation-delay:${Math.random()*6}s;`;
+    el.innerHTML=getImg(name,false);
+    c.appendChild(el);
+  });
+}
 
-window.addEventListener('load',()=>{initParticles();initFloatingChars();selectedUniverses=[...ALL_UNIVERSES];const p=new URLSearchParams(window.location.search);const c=p.get('code');if(c)document.getElementById('home-code').value=c.toUpperCase();});
+window.addEventListener('load',()=>{
+  initParticles();
+  initFloatingChars();
+  selectedUniverses=[...ALL_UNIVERSES];
+  const p=new URLSearchParams(window.location.search);
+  const c=p.get('code');
+  if(c) document.getElementById('home-code').value=c.toUpperCase();
+});
 
-function renderUniversePanel(state){const panel=document.getElementById('universe-panel');if(!isHost){panel.style.display='none';return;}panel.style.display='block';const active=state?state.selectedUniverses:selectedUniverses;document.getElementById('uni-count').textContent=`(${active.length}/${ALL_UNIVERSES.length})`;document.getElementById('universe-list').innerHTML=ALL_UNIVERSES.map(u=>`<div class="uni-chip ${active.includes(u)?'active':''}" onclick="toggleUniverse('${u}')"><div class="uni-check">${active.includes(u)?'✓':''}</div><span>${u}</span></div>`).join('');}
+function renderUniversePanel(state){
+  const panel=document.getElementById('universe-panel');
+  if(!isHost){panel.style.display='none';return;}
+  panel.style.display='block';
+  const active=state?state.selectedUniverses:selectedUniverses;
+  document.getElementById('uni-count').textContent=`(${active.length}/${ALL_UNIVERSES.length})`;
+  document.getElementById('universe-list').innerHTML=ALL_UNIVERSES.map(u=>`<div class="uni-chip ${active.includes(u)?'active':''}" onclick="toggleUniverse('${u}')"><div class="uni-check">${active.includes(u)?'✓':''}</div><span>${u}</span></div>`).join('');
+}
 
-function toggleUniverse(uni){if(!isHost)return;if(selectedUniverses.includes(uni)){if(selectedUniverses.length<=1)return;selectedUniverses=selectedUniverses.filter(u=>u!==uni);}else selectedUniverses.push(uni);socket.emit('update_universes',{selectedUniverses});renderUniversePanel({selectedUniverses});}
+function toggleUniverse(uni){
+  if(!isHost)return;
+  if(selectedUniverses.includes(uni)){
+    if(selectedUniverses.length<=1)return;
+    selectedUniverses=selectedUniverses.filter(u=>u!==uni);
+  }else selectedUniverses.push(uni);
+  socket.emit('update_universes',{selectedUniverses});
+  renderUniversePanel({selectedUniverses});
+}
 
-function setupShare(code){const link=`${window.location.origin}?code=${code}`;document.getElementById('share-link').textContent=link;if(!qrGenerated){document.getElementById('qrcode').innerHTML='';new QRCode(document.getElementById('qrcode'),{text:link,width:140,height:140,colorDark:'#534AB7',colorLight:'#1a1828'});qrGenerated=true;}}
-function copyLink(){navigator.clipboard.writeText(document.getElementById('share-link').textContent).then(()=>{const btn=document.getElementById('copy-btn');btn.textContent='✓ Copié!';btn.style.background='#1D9E75';setTimeout(()=>{btn.textContent='📋 Copier';btn.style.background='';},2000);});}
+function setupShare(code){
+  const link=`${window.location.origin}?code=${code}`;
+  document.getElementById('share-link').textContent=link;
+  if(!qrGenerated){
+    document.getElementById('qrcode').innerHTML='';
+    new QRCode(document.getElementById('qrcode'),{text:link,width:140,height:140,colorDark:'#534AB7',colorLight:'#1a1828'});
+    qrGenerated=true;
+  }
+}
+function copyLink(){
+  navigator.clipboard.writeText(document.getElementById('share-link').textContent).then(()=>{
+    const btn=document.getElementById('copy-btn');
+    btn.textContent='✓ Copié!';btn.style.background='#1D9E75';
+    setTimeout(()=>{btn.textContent='📋 Copier';btn.style.background='';},2000);
+  });
+}
 
 let timerInterval=null,timerLeft=0;
 function startTimer(s){clearInterval(timerInterval);timerLeft=s;updateTimerUI();timerInterval=setInterval(()=>{timerLeft--;updateTimerUI();if(timerLeft<=0){clearInterval(timerInterval);autoSubmitHint();}},1000);}
@@ -143,8 +159,19 @@ function setError(id,msg){const el=document.getElementById(id);if(el){el.textCon
 const AV=['av-purple','av-teal','av-coral','av-blue','av-amber'];
 function avatar(name,i){return`<div class="avatar ${AV[i%5]}">${name.slice(0,2).toUpperCase()}</div>`;}
 
-function createRoom(){myName=document.getElementById('home-name').value.trim();const rounds=parseInt(document.getElementById('home-rounds').value)||3;if(!myName)return setError('home-error','Entre ton pseudo !');socket.emit('create_room',{playerName:myName,totalRounds:rounds,selectedUniverses});}
-function joinRoom(){myName=document.getElementById('home-name').value.trim();const code=document.getElementById('home-code').value.trim().toUpperCase();if(!myName)return setError('home-error','Entre ton pseudo !');if(code.length!==4)return setError('home-error','Code = 4 caractères.');socket.emit('join_room',{code,playerName:myName});}
+function createRoom(){
+  myName=document.getElementById('home-name').value.trim();
+  const rounds=parseInt(document.getElementById('home-rounds').value)||3;
+  if(!myName)return setError('home-error','Entre ton pseudo !');
+  socket.emit('create_room',{playerName:myName,totalRounds:rounds,selectedUniverses});
+}
+function joinRoom(){
+  myName=document.getElementById('home-name').value.trim();
+  const code=document.getElementById('home-code').value.trim().toUpperCase();
+  if(!myName)return setError('home-error','Entre ton pseudo !');
+  if(code.length!==4)return setError('home-error','Code = 4 caractères.');
+  socket.emit('join_room',{code,playerName:myName});
+}
 function startGame(){socket.emit('start_game');}
 function markReady(){document.getElementById('reveal-ready-btn').style.display='none';document.getElementById('reveal-waiting-others').style.display='block';socket.emit('player_ready');}
 function submitHint(){const val=document.getElementById('round-hint-input').value.trim();if(!val)return;stopTimer();socket.emit('submit_hint',{hint:val});document.getElementById('round-hint-input').value='';}
@@ -153,7 +180,14 @@ function nextRound(){socket.emit('next_round');}
 function restart(){qrGenerated=false;socket.emit('restart');}
 function quitGame(){stopTimer();if(localStream)localStream.getTracks().forEach(t=>t.stop());socket.disconnect();location.reload();}
 
-function renderLobby(state){document.getElementById('lobby-code').textContent=state.code;document.getElementById('lobby-players').innerHTML=state.players.map((p,i)=>`<div class="player-row">${avatar(p.name,i)}<span>${p.name}</span>${p.ready?'<span class="ready-dot">✓</span>':''}</div>`).join('');const ok=isHost&&state.players.length>=3;document.getElementById('lobby-start-btn').style.display=ok?'block':'none';document.getElementById('lobby-hint').textContent=state.players.length<3?`En attente... (${state.players.length}/3 minimum)`:isHost?'':'En attente de l\'hôte...';renderUniversePanel(state);}
+function renderLobby(state){
+  document.getElementById('lobby-code').textContent=state.code;
+  document.getElementById('lobby-players').innerHTML=state.players.map((p,i)=>`<div class="player-row">${avatar(p.name,i)}<span>${p.name}</span>${p.ready?'<span class="ready-dot">✓</span>':''}</div>`).join('');
+  const ok=isHost&&state.players.length>=3;
+  document.getElementById('lobby-start-btn').style.display=ok?'block':'none';
+  document.getElementById('lobby-hint').textContent=state.players.length<3?`En attente... (${state.players.length}/3 minimum)`:isHost?'':'En attente de l\'hôte...';
+  renderUniversePanel(state);
+}
 function renderHints(){const all=[];[0,1].forEach(r=>{const e=Object.entries(allHints[r]);if(e.length){all.push(`<div class="hint-round-label">Tour ${r+1}</div>`);e.forEach(([n,h])=>all.push(`<div class="hint-chip"><strong>${n}</strong> : ${h}</div>`));}});const card=document.getElementById('hints-display');if(all.length){card.style.display='block';document.getElementById('hints-list').innerHTML=all.join('');}else card.style.display='none';}
 function updateRound(currentPlayer){document.getElementById('round-current').textContent=`C'est au tour de ${currentPlayer}`;const isMe=currentPlayer===myName;document.getElementById('round-hint-area').style.display=isMe?'block':'none';document.getElementById('round-wait-area').style.display=isMe?'none':'block';if(!isMe){document.getElementById('round-wait-name').textContent=currentPlayer;stopTimer();}else startTimer(35);document.getElementById('round-hint-input').value='';}
 function renderVote(players){selectedVote=null;const lines=[];[0,1].forEach(r=>{const e=Object.entries(allHints[r]);if(e.length){lines.push(`<div class="hint-round-label">Tour ${r+1}</div>`);e.forEach(([n,h])=>lines.push(`<div class="hint-chip"><strong>${n}</strong> : ${h}</div>`));}});document.getElementById('vote-hints').innerHTML='<div class="card-label">Tous les indices</div>'+lines.join('');document.getElementById('vote-buttons').innerHTML=players.map((name,i)=>`<button class="vote-btn" id="vb-${i}" onclick="selectVote(${i},'${name}')">${avatar(name,i)} ${name}</button>`).join('');document.getElementById('vote-confirm-btn').disabled=true;document.getElementById('vote-status').textContent='';}
