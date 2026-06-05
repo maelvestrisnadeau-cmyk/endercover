@@ -9,7 +9,7 @@ const CHAR_MAL_IDS = {
   'Hinata':98,'Sakura':105,'Hashirama':2,'Tobirama':3,'Kisame':11791,
   'Deidara':12,'Sasori':2153,'Konan':3131,'Temari':40,'Kankuro':41,
   'Choji':67,'Ino':68,'Kiba':66,'Shino':69,'Kurama':3134,
-  'Killer Bee':10,$10:'Asuma',Asuma:107,'Danzo':3135,
+  'Killer Bee':10,'Asuma':107,'Danzo':3135,
   // Dragon Ball
   'Goku':246,'Vegeta':247,'Gohan':248,'Freezer':249,'Cell':250,
   'Broly':251,'Piccolo':252,'Boo':253,'Trunks':254,'Goten':255,
